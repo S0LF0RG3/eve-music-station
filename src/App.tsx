@@ -316,8 +316,8 @@ function MainApp() {
                   </>
                 ) : (
                   <>
-                    <strong>ElevenLabs Mode:</strong> Generates and downloads actual music using ElevenLabs Sound Generation API.
-                    Requires valid API key. Sliders functionally control the generation parameters.
+                    <strong>ElevenLabs Mode:</strong> Generates and downloads actual music using ElevenLabs Music Generation API.
+                    Requires valid API key. Supports 3s-5min duration. Sliders functionally control the generation parameters.
                   </>
                 )}
               </p>
@@ -578,7 +578,7 @@ function MainApp() {
 
               {mode === 'elevenlabs' && (
                 <div className="p-3 rounded-lg bg-accent/10 border border-accent/30 text-xs text-foreground/90">
-                  <strong>ElevenLabs Limit:</strong> Sound Generation API is capped at 22 seconds. Duration will be limited during generation.
+                  <strong>ElevenLabs Music API:</strong> Supports 3 seconds to 5 minutes (300s). Duration set to {Math.min(Math.max(duration ?? 60, 3), 300)}s.
                 </div>
               )}
             </div>

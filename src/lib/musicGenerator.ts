@@ -52,9 +52,7 @@ export class MusicGenerator {
 
   private async generateElevenLabs(apiKey?: string): Promise<GenerationResult> {
     try {
-      const prompt = this.buildElevenLabsPrompt()
-
-      const promptForLLM = createPrompt`You are Eve, an AI music generation agent. Based on this music configuration, generate a detailed and evocative music generation prompt that will be used with a music generation API.
+      const promptForLLM = createPrompt`You are Eve, an AI music generation agent. Based on this music configuration, generate a detailed and evocative music generation prompt for the ElevenLabs Music API.
 
 Configuration:
 - Genres: ${this.config.genres.join(', ')}
@@ -65,24 +63,23 @@ Configuration:
 - Audio: ${this.config.audio}/100 (production quality)
 - Duration: ${this.config.durationSeconds} seconds
 
-REQUIREMENTS:
-1. ALWAYS include "heavy 808 bass and percussion" - this is mandatory
-2. Include algorithmic elements: ${this.algorithms.getElevenLabsDescription()}
+CRITICAL REQUIREMENTS:
+1. MAXIMUM 400 characters - this is a hard API limit
+2. ALWAYS include "heavy 808 bass and percussion" - this is mandatory
 3. Map sliders to descriptive terms:
    - Weirdness ${this.config.weirdness}: ${this.mapWeirdnessToDescription(this.config.weirdness)}
    - Style ${this.config.style}: ${this.mapStyleToDescription(this.config.style)}
    - Audio ${this.config.audio}: ${this.mapAudioToDescription(this.config.audio)}
 4. Add poetic essence: ${this.algorithms.getPoeticEssence()}
 5. Include structure hint based on ${this.config.durationSeconds}s duration
-6. Keep it under 400 characters but highly evocative and concise
 
-Return ONLY the music generation prompt text, nothing else.`
+Be highly concise and evocative. Every word counts. Return ONLY the music generation prompt text, nothing else.`
 
       let enhancedPrompt = await callLLM(promptForLLM, 'gpt-4o-mini')
       enhancedPrompt = enhancedPrompt.trim()
 
-      if (enhancedPrompt.length > 450) {
-        enhancedPrompt = enhancedPrompt.substring(0, 447) + '...'
+      if (enhancedPrompt.length > 400) {
+        enhancedPrompt = enhancedPrompt.substring(0, 397) + '...'
       }
 
       if (!apiKey) {
@@ -109,7 +106,7 @@ Return ONLY the music generation prompt text, nothing else.`
 
       const musicResult = await elevenLabs.generateMusic({
         text: enhancedPrompt,
-        duration_seconds: Math.min(this.config.durationSeconds, 22),
+        duration_seconds: Math.min(Math.max(this.config.durationSeconds, 3), 300),
         prompt_influence: promptInfluence,
       })
 

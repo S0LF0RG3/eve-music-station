@@ -20,7 +20,9 @@ export class ElevenLabsService {
 
   async generateMusic(options: ElevenLabsMusicGenerationOptions): Promise<ElevenLabsMusicGenerationResult> {
     try {
-      const response = await fetch('https://api.elevenlabs.io/v1/sound-generation', {
+      const durationSeconds = Math.min(Math.max(options.duration_seconds || 60, 3), 300)
+
+      const response = await fetch('https://api.elevenlabs.io/v1/music-generation', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -28,8 +30,8 @@ export class ElevenLabsService {
         },
         body: JSON.stringify({
           text: options.text,
-          duration_seconds: options.duration_seconds,
-          prompt_influence: options.prompt_influence || 0.3,
+          duration: durationSeconds,
+          prompt_influence: options.prompt_influence || 0.5,
         }),
       })
 
