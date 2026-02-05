@@ -2,11 +2,26 @@ export type GenerationMode = 'suno' | 'elevenlabs'
 
 export type VoiceType = 'instrumental' | 'male' | 'female'
 
+export type VocalStyle = 
+  | 'none'
+  | 'soft'
+  | 'powerful'
+  | 'raspy'
+  | 'breathy'
+  | 'operatic'
+  | 'rap'
+  | 'spoken-word'
+  | 'whispered'
+  | 'choir'
+  | 'harmonized'
+  | 'auto-tuned'
+
 export interface MusicConfig {
   mode: GenerationMode
   genres: string[]
   description: string
   voiceType: VoiceType
+  vocalStyle?: VocalStyle
   weirdness: number
   style: number
   audio: number

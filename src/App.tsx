@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useKV } from '@github/spark/hooks'
-import { MusicConfig, GenerationMode, VoiceType, GenerationResult, AVAILABLE_GENRES } from './lib/types'
+import { MusicConfig, GenerationMode, VoiceType, VocalStyle, GenerationResult, AVAILABLE_GENRES } from './lib/types'
 import { MusicGenerator } from './lib/musicGenerator'
 import { AlgorithmicResonance } from './lib/algorithms'
 import { MusicLibrary } from './lib/musicLibrary'
@@ -15,6 +15,7 @@ import { CosmicSlider } from './components/CosmicSlider'
 import { AlgorithmDisplay } from './components/AlgorithmDisplay'
 import { ResultsDisplay } from './components/ResultsDisplay'
 import { VoiceSelector } from './components/VoiceSelector'
+import { VocalStyleSelector } from './components/VocalStyleSelector'
 import { MusicLibraryDisplay } from './components/MusicLibrary'
 import { SharePage } from './components/SharePage'
 import { toast } from 'sonner'
@@ -51,6 +52,7 @@ function MainApp() {
   const [lyricsTheme, setLyricsTheme] = useKV<string>('eve-music-lyrics-theme', '')
   const [customLyrics, setCustomLyrics] = useKV<string>('eve-music-custom-lyrics', '')
   const [voiceType, setVoiceType] = useKV<VoiceType>('eve-music-voice', 'instrumental')
+  const [vocalStyle, setVocalStyle] = useKV<VocalStyle>('eve-music-vocal-style', 'none')
   const [weirdness, setWeirdness] = useKV<number>('eve-music-weirdness', 50)
   const [style, setStyle] = useKV<number>('eve-music-style', 50)
   const [audio, setAudio] = useKV<number>('eve-music-audio', 50)
@@ -80,6 +82,7 @@ function MainApp() {
     lyricsTheme: lyricsTheme ?? '',
     customLyrics: customLyrics ?? '',
     voiceType: voiceType ?? 'instrumental',
+    vocalStyle: vocalStyle ?? 'none',
     weirdness: weirdness ?? 50,
     style: style ?? 50,
     audio: audio ?? 50,
@@ -396,6 +399,11 @@ function MainApp() {
 
                 {voiceType !== 'instrumental' && (
                   <>
+                    <VocalStyleSelector 
+                      value={vocalStyle ?? 'none'} 
+                      onChange={setVocalStyle}
+                    />
+
                     <div className="space-y-3">
                       <label htmlFor="elevenlabs-lyrics-theme" className="text-sm font-medium block">
                         Theme or Concept (Optional)
@@ -454,65 +462,74 @@ function MainApp() {
               </div>
 
               <div className="space-y-3">
-                <label htmlFor="lyrics-theme" className="text-sm font-medium block">
-                  Theme or Concept (Optional)
-                </label>
-                <Textarea
-                  id="lyrics-theme"
-                  value={lyricsTheme ?? ''}
-                  onChange={(e) => setLyricsTheme(e.target.value)}
-                  placeholder="e.g., heartbreak in the city, cosmic journey, rebellion..."
-                  className="min-h-[60px] resize-none bg-background/50 font-mono text-sm"
-                  maxLength={200}
-                />
-                <p className="text-xs text-muted-foreground">{(lyricsTheme ?? '').length}/200 - Guides lyric generation</p>
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <label htmlFor="custom-lyrics" className="text-sm font-medium block">
-                    Custom Lyrics (Optional)
-                  </label>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={handleEnhanceLyrics}
-                    disabled={isEnhancingLyrics || (!(customLyrics ?? '').trim() && !(lyricsTheme ?? '').trim())}
-                    className="gap-2 h-7"
-                  >
-                    <Sparkle className="h-3 w-3" />
-                    {isEnhancingLyrics ? 'Enhancing...' : 'Enhance'}
-                  </Button>
-                </div>
-                <Textarea
-                  id="custom-lyrics"
-                  value={customLyrics ?? ''}
-                  onChange={(e) => setCustomLyrics(e.target.value)}
-                  placeholder="Write your own lyrics or let Eve generate them. You can also write ideas and enhance them with the button above..."
-                  className="min-h-[150px] resize-none bg-background/50 font-mono text-sm"
-                  maxLength={2000}
-                />
-                <div className="flex justify-between items-center">
-                  <p className="text-xs text-muted-foreground">
-                    {(customLyrics ?? '').length}/2000 - Leave blank to auto-generate
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <Switch
-                      id="randomize-lyrics"
-                      checked={randomizeLyrics}
-                      onCheckedChange={setRandomizeLyrics}
-                    />
-                    <Label htmlFor="randomize-lyrics" className="text-xs cursor-pointer">
-                      Randomize on generate
-                    </Label>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-3">
                 <label className="text-sm font-medium block">Voice Type</label>
                 <VoiceSelector value={voiceType ?? 'instrumental'} onChange={setVoiceType} />
               </div>
+
+              {voiceType !== 'instrumental' && (
+                <>
+                  <VocalStyleSelector 
+                    value={vocalStyle ?? 'none'} 
+                    onChange={setVocalStyle}
+                  />
+
+                  <div className="space-y-3">
+                    <label htmlFor="lyrics-theme" className="text-sm font-medium block">
+                      Theme or Concept (Optional)
+                    </label>
+                    <Textarea
+                      id="lyrics-theme"
+                      value={lyricsTheme ?? ''}
+                      onChange={(e) => setLyricsTheme(e.target.value)}
+                      placeholder="e.g., heartbreak in the city, cosmic journey, rebellion..."
+                      className="min-h-[60px] resize-none bg-background/50 font-mono text-sm"
+                      maxLength={200}
+                    />
+                    <p className="text-xs text-muted-foreground">{(lyricsTheme ?? '').length}/200 - Guides lyric generation</p>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label htmlFor="custom-lyrics" className="text-sm font-medium block">
+                        Custom Lyrics (Optional)
+                      </label>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={handleEnhanceLyrics}
+                        disabled={isEnhancingLyrics || (!(customLyrics ?? '').trim() && !(lyricsTheme ?? '').trim())}
+                        className="gap-2 h-7"
+                      >
+                        <Sparkle className="h-3 w-3" />
+                        {isEnhancingLyrics ? 'Enhancing...' : 'Enhance'}
+                      </Button>
+                    </div>
+                    <Textarea
+                      id="custom-lyrics"
+                      value={customLyrics ?? ''}
+                      onChange={(e) => setCustomLyrics(e.target.value)}
+                      placeholder="Write your own lyrics or let Eve generate them. You can also write ideas and enhance them with the button above..."
+                      className="min-h-[150px] resize-none bg-background/50 font-mono text-sm"
+                      maxLength={2000}
+                    />
+                    <div className="flex justify-between items-center">
+                      <p className="text-xs text-muted-foreground">
+                        {(customLyrics ?? '').length}/2000 - Leave blank to auto-generate
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          id="randomize-lyrics"
+                          checked={randomizeLyrics}
+                          onCheckedChange={setRandomizeLyrics}
+                        />
+                        <Label htmlFor="randomize-lyrics" className="text-xs cursor-pointer">
+                          Randomize on generate
+                        </Label>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
             </Card>
           )}
 

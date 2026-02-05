@@ -52,12 +52,16 @@ export class MusicGenerator {
 
   private async generateElevenLabs(apiKey?: string): Promise<GenerationResult> {
     try {
+      const vocalStyleContext = this.config.vocalStyle && this.config.vocalStyle !== 'none'
+        ? `\n- Vocal Style: ${this.config.vocalStyle} delivery`
+        : ''
+
       const promptForLLM = createPrompt`You are Eve, an AI music generation agent. Based on this music configuration, generate a detailed and evocative music generation prompt for the ElevenLabs Music API.
 
 Configuration:
 - Genres: ${this.config.genres.join(', ')}
 - Description: ${this.config.description}
-- Voice Type: ${this.config.voiceType}
+- Voice Type: ${this.config.voiceType}${vocalStyleContext}
 - Weirdness: ${this.config.weirdness}/100 (experimental nature)
 - Style: ${this.config.style}/100 (genre adherence)
 - Audio: ${this.config.audio}/100 (production quality)
@@ -72,6 +76,7 @@ CRITICAL REQUIREMENTS:
    - Audio ${this.config.audio}: ${this.mapAudioToDescription(this.config.audio)}
 4. Add poetic essence: ${this.algorithms.getPoeticEssence()}
 5. Include structure hint based on ${this.config.durationSeconds}s duration
+${this.config.vocalStyle && this.config.vocalStyle !== 'none' ? `6. Emphasize ${this.config.vocalStyle} vocal delivery style` : ''}
 
 Be highly concise and evocative. Every word counts. Return ONLY the music generation prompt text, nothing else.`
 
@@ -101,6 +106,7 @@ Be highly concise and evocative. Every word counts. Return ONLY the music genera
             audio: this.config.audio,
             durationSeconds: this.config.durationSeconds,
             voiceType: this.config.voiceType,
+            vocalStyle: this.config.vocalStyle,
           },
         }
       }
@@ -139,6 +145,7 @@ Be highly concise and evocative. Every word counts. Return ONLY the music genera
           audio: this.config.audio,
           durationSeconds: this.config.durationSeconds,
           voiceType: this.config.voiceType,
+          vocalStyle: this.config.vocalStyle,
           audioBlob: musicResult.audioBlob,
         },
       }
@@ -212,11 +219,14 @@ Be highly concise and evocative. Every word counts. Return ONLY the music genera
       ? `Theme/concept: ${this.config.lyricsTheme}\n` 
       : ''
 
+    const vocalStyleContext = this.config.vocalStyle && this.config.vocalStyle !== 'none'
+      ? `Vocal Style: ${this.config.vocalStyle} - write lyrics that complement this vocal delivery style\n`
+      : ''
+
     const promptForLLM = createPrompt`You are Eve, an AI music generation agent. Generate concise lyrics for ElevenLabs Music API for a ${this.config.genres.join(', ')} track.
 
 Description: "${this.config.description}"
-${themeContext}
-Voice Type: ${this.config.voiceType}
+${themeContext}${vocalStyleContext}Voice Type: ${this.config.voiceType}
 Duration: ${this.config.durationSeconds} seconds
 
 CRITICAL REQUIREMENTS:
@@ -224,7 +234,7 @@ CRITICAL REQUIREMENTS:
 2. NO meta-tags or special formatting like [Verse], [Chorus], etc.
 3. Just plain lyrics text that flows naturally
 4. Match the mood and energy described
-5. For ${this.config.voiceType} voice
+5. For ${this.config.voiceType} voice${this.config.vocalStyle && this.config.vocalStyle !== 'none' ? ` with ${this.config.vocalStyle} delivery` : ''}
 6. ${this.getDurationGuidance()}
 
 Return ONLY the plain lyrics text, nothing else. Be concise but evocative.`
@@ -251,6 +261,8 @@ Return ONLY the plain lyrics text, nothing else. Be concise but evocative.`
       ? `Theme/concept: ${this.config.lyricsTheme}\n` 
       : ''
 
+    const vocalStyleGuidance = this.getVocalStyleGuidance()
+
     const promptForLLM = createPrompt`You are Eve, an AI music generation agent specializing in creating Suno.com lyrics with meta-tags.
 
 Generate lyrics for a ${this.config.genres.join(', ')} track with this description: "${this.config.description}"
@@ -262,8 +274,8 @@ REQUIREMENTS:
 4. Use Suno meta-tags:
    - Section tags: [Intro], [Verse], [Chorus], [Bridge], [Drop], [Outro], etc.
    - Audio FX: [[808 drop]], [[reverb]], [[glitch]], [[fade]], etc.
-   - Vocal FX (if not instrumental): [whisper], [growl], [rap], [powerful vocals], etc.
-5. Voice type: ${this.config.voiceType}
+   - Vocal FX (if not instrumental): ${vocalStyleGuidance}
+5. Voice type: ${this.config.voiceType}${this.config.vocalStyle && this.config.vocalStyle !== 'none' ? ` with ${this.config.vocalStyle} style` : ''}
 6. Weirdness level: ${this.config.weirdness}/100 - ${this.config.weirdness > 60 ? 'use experimental/chaotic elements' : 'keep structured'}
 7. ALWAYS include [[808 drop]] or [[808 bass]] in drop/heavy sections
 8. Make lyrics match the description and mood
@@ -273,6 +285,28 @@ Return ONLY the formatted lyrics with meta-tags, no explanations.`
 
     const lyrics = await callLLM(promptForLLM, 'gpt-4o')
     return lyrics.trim()
+  }
+
+  private getVocalStyleGuidance(): string {
+    if (!this.config.vocalStyle || this.config.vocalStyle === 'none') {
+      return '[whisper], [growl], [rap], [powerful vocals], etc.'
+    }
+
+    const styleMap: Record<string, string> = {
+      'soft': '[soft vocals], [gentle], [intimate] - use throughout',
+      'powerful': '[powerful vocals], [strong], [belting] - use throughout',
+      'raspy': '[raspy], [gritty], [rough vocals] - use throughout',
+      'breathy': '[breathy], [whispered], [airy vocals] - use throughout',
+      'operatic': '[operatic], [dramatic], [soaring vocals] - use throughout',
+      'rap': '[rap], [rhythmic], [spoken] - use throughout',
+      'spoken-word': '[spoken word], [narrative], [poetic] - use throughout',
+      'whispered': '[whisper], [hushed], [intimate] - use throughout',
+      'choir': '[choir], [layered voices], [harmonies] - use throughout',
+      'harmonized': '[harmonized], [vocal layers], [backing vocals] - use throughout',
+      'auto-tuned': '[auto-tuned], [processed], [robotic] - use throughout',
+    }
+
+    return styleMap[this.config.vocalStyle] || '[whisper], [growl], [rap], [powerful vocals], etc.'
   }
 
   private getDurationHintForLyrics(): string {
