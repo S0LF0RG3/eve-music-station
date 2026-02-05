@@ -21,6 +21,13 @@ const VOCAL_STYLES: { value: VocalStyle; label: string; description: string }[] 
   { value: 'choir', label: 'Choir', description: 'Multiple layered voices' },
   { value: 'harmonized', label: 'Harmonized', description: 'Layered vocal harmonies' },
   { value: 'auto-tuned', label: 'Auto-Tuned', description: 'Processed, robotic effect' },
+  { value: 'growl', label: 'Growl', description: 'Deep, throaty metal vocals' },
+  { value: 'falsetto', label: 'Falsetto', description: 'High, head voice technique' },
+  { value: 'death-metal', label: 'Death Metal', description: 'Extreme guttural growls' },
+  { value: 'scream', label: 'Scream', description: 'High-pitched aggressive vocals' },
+  { value: 'guttural', label: 'Guttural', description: 'Deep, primal throat vocals' },
+  { value: 'melodic', label: 'Melodic', description: 'Clear, tuneful vocals' },
+  { value: 'aggressive', label: 'Aggressive', description: 'Intense, forceful delivery' },
 ]
 
 export function VocalStyleSelector({ value, onChange, disabled }: VocalStyleSelectorProps) {

@@ -40,11 +40,11 @@ A dual-mode agentic music generation application for creating Suno prompts and g
 - **Success criteria**: Comfortable typing experience, 500 char limit with counter, integrates with final output, enhance feature works smoothly
 
 ### Lyrics & Voice Input
-- **Functionality**: Theme input, custom lyrics textarea, voice type selector (Male/Female/Instrumental), enhance option (Suno only), randomize option (Suno only)
-- **Purpose**: Gives users control over lyrical content and vocal style, or lets AI generate creative lyrics. For Suno: formatted lyrics with meta-tags. For ElevenLabs: plain text lyrics (450 char max) sent to API.
-- **Trigger**: Enter lyrics theme/concept or write full custom lyrics, select voice type, optionally enhance or randomize (Suno only)
-- **Progression**: (Optional) Enter theme → Write lyrics or leave blank → Select voice type → (Suno: Optional enhance/randomize with meta-tags) OR (ElevenLabs: Auto-generate concise lyrics ≤450 chars) → Lyrics integrated into generation → (ElevenLabs: Lyrics sent to API, displayed in results)
-- **Success criteria**: Intuitive layout, Suno mode has full meta-tag support with enhance/randomize, ElevenLabs mode enforces 450 char limit and generates plain text lyrics, voice selection clear, custom lyrics override auto-generation, lyrics displayed in results for both modes
+- **Functionality**: Theme input, custom lyrics textarea, voice type selector (Male/Female/Instrumental), vocal style selector (19+ presets including growl, falsetto, death metal, operatic, rap, etc.), enhance option (Suno only), randomize option (Suno only)
+- **Purpose**: Gives users control over lyrical content and vocal style/delivery, or lets AI generate creative lyrics. For Suno: formatted lyrics with meta-tags. For ElevenLabs: plain text lyrics (450 char max) sent to API. Vocal style presets guide the generation toward specific vocal delivery techniques.
+- **Trigger**: Enter lyrics theme/concept or write full custom lyrics, select voice type, select vocal style preset, optionally enhance or randomize (Suno only)
+- **Progression**: (Optional) Enter theme → Write lyrics or leave blank → Select voice type → Select vocal style (growl, falsetto, death metal, soft, powerful, raspy, operatic, etc.) → (Suno: Optional enhance/randomize with meta-tags) OR (ElevenLabs: Auto-generate concise lyrics ≤450 chars with style context) → Lyrics integrated into generation → (ElevenLabs: Lyrics and style sent to API, displayed in results)
+- **Success criteria**: Intuitive layout, Suno mode has full meta-tag support with enhance/randomize, ElevenLabs mode enforces 450 char limit and generates plain text lyrics with vocal style context, voice selection clear, 19+ vocal style presets available (none, soft, powerful, raspy, breathy, operatic, rap, spoken-word, whispered, choir, harmonized, auto-tuned, growl, falsetto, death-metal, scream, guttural, melodic, aggressive), custom lyrics override auto-generation, lyrics displayed in results for both modes, vocal style influences generation prompt
 
 ### Music Generation
 - **Functionality**: Primary action that orchestrates the entire generation process - creates Suno exports or actual playable music via ElevenLabs API, automatically saves to library

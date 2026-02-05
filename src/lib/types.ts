@@ -15,6 +15,13 @@ export type VocalStyle =
   | 'choir'
   | 'harmonized'
   | 'auto-tuned'
+  | 'growl'
+  | 'falsetto'
+  | 'death-metal'
+  | 'scream'
+  | 'guttural'
+  | 'melodic'
+  | 'aggressive'
 
 export interface MusicConfig {
   mode: GenerationMode
