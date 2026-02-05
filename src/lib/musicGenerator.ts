@@ -56,7 +56,7 @@ export class MusicGenerator {
         ? `\n- Vocal Style: ${this.config.vocalStyle} delivery`
         : ''
 
-      const promptForLLM = createPrompt`You are Eve, an AI music generation agent. Based on this music configuration, generate a detailed and evocative music generation prompt for the ElevenLabs Music API.
+      const promptForLLM = createPrompt`You are Eve, an AI music generation agent. Based on this music configuration, generate a detailed and evocative music/sound generation prompt for the ElevenLabs Text-to-Sound API.
 
 Configuration:
 - Genres: ${this.config.genres.join(', ')}
@@ -77,6 +77,7 @@ CRITICAL REQUIREMENTS:
 4. Add poetic essence: ${this.algorithms.getPoeticEssence()}
 5. Include structure hint based on ${this.config.durationSeconds}s duration
 ${this.config.vocalStyle && this.config.vocalStyle !== 'none' ? `6. Emphasize ${this.config.vocalStyle} vocal delivery style` : ''}
+7. Describe it as a complete music track with all instruments and production elements
 
 Be highly concise and evocative. Every word counts. Return ONLY the music generation prompt text, nothing else.`
 
@@ -118,9 +119,8 @@ Be highly concise and evocative. Every word counts. Return ONLY the music genera
 
       const musicResult = await elevenLabs.generateMusic({
         text: enhancedPrompt,
-        duration_seconds: Math.min(Math.max(this.config.durationSeconds, 3), 300),
+        duration_seconds: Math.min(Math.max(this.config.durationSeconds, 0.5), 22),
         prompt_influence: promptInfluence,
-        lyrics,
         genres: this.config.genres,
       })
 
