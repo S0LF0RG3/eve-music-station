@@ -121,6 +121,7 @@ Be highly concise and evocative. Every word counts. Return ONLY the music genera
         duration_seconds: Math.min(Math.max(this.config.durationSeconds, 3), 300),
         prompt_influence: promptInfluence,
         lyrics,
+        genres: this.config.genres,
       })
 
       if (!musicResult.success || !musicResult.audioUrl) {
