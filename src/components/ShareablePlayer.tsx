@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { LibraryTrack, MusicLibrary } from '@/lib/musicLibrary'
+import { downloadAudio } from '@/lib/elevenLabsService'
 import { Card } from './ui/card'
 import { Button } from './ui/button'
 import { Badge } from './ui/badge'
@@ -13,6 +14,7 @@ import {
   Sliders as SlidersIcon 
 } from '@phosphor-icons/react'
 import { Slider } from './ui/slider'
+import { toast } from 'sonner'
 
 interface ShareablePlayerProps {
   trackId: string
@@ -171,11 +173,29 @@ export function ShareablePlayer({ trackId, embedded = false }: ShareablePlayerPr
               <Button
                 size="lg"
                 variant="outline"
-                onClick={() => {
-                  const link = document.createElement('a')
-                  link.href = track.result.audioUrl!
-                  link.download = `${track.title}.mp3`
-                  link.click()
+                onClick={async () => {
+                  try {
+                    if (track.result.metadata?.audioBlob) {
+                      downloadAudio(track.result.metadata.audioBlob, `${track.title}.mp3`)
+                      toast.success('Download started!')
+                    } else if (track.result.audioUrl) {
+                      const res = await fetch(track.result.audioUrl)
+                      if (!res.ok) {
+                        throw new Error('Failed to fetch audio')
+                      }
+                      const blob = await res.blob()
+                      if (!blob || blob.size === 0) {
+                        throw new Error('Invalid audio data')
+                      }
+                      downloadAudio(blob, `${track.title}.mp3`)
+                      toast.success('Download started!')
+                    } else {
+                      toast.error('No audio available to download')
+                    }
+                  } catch (error) {
+                    console.error('Download error:', error)
+                    toast.error(error instanceof Error ? error.message : 'Failed to download audio')
+                  }
                 }}
                 className="gap-2 h-12"
               >

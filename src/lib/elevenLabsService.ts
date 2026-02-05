@@ -279,12 +279,22 @@ export class ElevenLabsService {
 }
 
 export function downloadAudio(audioBlob: Blob, filename: string = 'eve-music-generation.mp3') {
-  const url = URL.createObjectURL(audioBlob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = filename
-  document.body.appendChild(a)
-  a.click()
-  document.body.removeChild(a)
-  URL.revokeObjectURL(url)
+  if (!audioBlob || !(audioBlob instanceof Blob)) {
+    console.error('Invalid blob provided to downloadAudio:', audioBlob)
+    throw new Error('Invalid audio blob - cannot download')
+  }
+
+  try {
+    const url = URL.createObjectURL(audioBlob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  } catch (error) {
+    console.error('Error creating download link:', error)
+    throw new Error('Failed to create download link')
+  }
 }
