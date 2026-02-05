@@ -30,19 +30,22 @@ export class ElevenLabsService {
       }
 
       const requestBody: any = {
-        prompt: promptText,
+        text: promptText,
         duration: durationSeconds,
-        mode: 'auto',
       }
 
       if (options.lyrics && options.lyrics.trim()) {
         const cleanLyrics = options.lyrics.trim()
-        requestBody.text = cleanLyrics
+        requestBody.lyrics = cleanLyrics
+      }
+
+      if (options.prompt_influence !== undefined) {
+        requestBody.prompt_influence = options.prompt_influence
       }
 
       console.log('ElevenLabs Music Generation API Request:', JSON.stringify(requestBody, null, 2))
 
-      const response = await fetch('https://api.elevenlabs.io/v1/text-to-sound-effects', {
+      const response = await fetch('https://api.elevenlabs.io/v1/music-generation', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
