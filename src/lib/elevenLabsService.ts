@@ -14,9 +14,15 @@ export interface ElevenLabsMusicGenerationResult {
 }
 
 interface CompositionSection {
+  section_name: string
   lyrics: string
-  positive_section_styles?: string[]
-  negative_section_styles?: string[]
+  positive_local_styles: string[]
+  negative_local_styles: string[]
+  duration_ms: number
+  lines: Array<{
+    text: string
+    duration_ms: number
+  }>
 }
 
 export class ElevenLabsService {
@@ -26,46 +32,63 @@ export class ElevenLabsService {
     this.apiKey = apiKey
   }
 
-  private parseAudioSection(text: string): { lyrics: string; section: string } {
-    const sectionMatch = text.match(/\[(Intro|Verse|Chorus|Bridge|Drop|Outro|Break|Pre-Chorus)\]/i)
-    const section = sectionMatch ? sectionMatch[1] : 'Verse'
-    const lyrics = text.replace(/\[.*?\]/g, '').trim()
-    return { lyrics, section }
+  private parseSectionName(text: string): string {
+    const sectionMatch = text.match(/\[(Intro|Verse(?:\s*\d*)?|Chorus|Bridge|Drop|Outro|Break|Pre-Chorus)\]/i)
+    if (sectionMatch) {
+      return sectionMatch[1]
+    }
+    return 'Verse'
   }
 
-  private buildCompositionPlan(lyrics: string, prompt: string, genres: string[] = []) {
-    const sections: CompositionSection[] = []
+  private buildCompositionPlan(lyrics: string, prompt: string, genres: string[] = [], durationSeconds: number = 60) {
+    const rawSections: Array<{ name: string; lyrics: string }> = []
     const lines = lyrics.split('\n')
-    let currentSection = ''
+    let currentSectionName = 'Intro'
+    let currentSectionLyrics: string[] = []
 
     for (const line of lines) {
       const trimmed = line.trim()
       if (!trimmed) continue
 
       const cleaned = trimmed.replace(/\[\[.*?\]\]/g, '').trim()
-      if (!cleaned) continue
-
-      currentSection += (currentSection ? '\n' : '') + cleaned
       
-      if (currentSection.length >= 200 || cleaned.match(/\[(Chorus|Bridge|Drop|Outro)\]/i)) {
-        if (currentSection.length > 0) {
-          sections.push({
-            lyrics: currentSection.substring(0, 450)
+      const sectionMatch = cleaned.match(/^\[(Intro|Verse(?:\s*\d*)?|Chorus|Bridge|Drop|Outro|Break|Pre-Chorus)\]/i)
+      
+      if (sectionMatch) {
+        if (currentSectionLyrics.length > 0) {
+          rawSections.push({
+            name: currentSectionName,
+            lyrics: currentSectionLyrics.join('\n')
           })
-          currentSection = ''
+          currentSectionLyrics = []
         }
+        currentSectionName = sectionMatch[1]
+        const withoutTag = cleaned.replace(/^\[.*?\]/, '').trim()
+        if (withoutTag) {
+          currentSectionLyrics.push(withoutTag)
+        }
+      } else if (cleaned && !cleaned.match(/^---/) && !cleaned.match(/\[Metronome\]/i)) {
+        currentSectionLyrics.push(cleaned)
       }
     }
 
-    if (currentSection.length > 0) {
-      sections.push({
-        lyrics: currentSection.substring(0, 450)
+    if (currentSectionLyrics.length > 0) {
+      rawSections.push({
+        name: currentSectionName,
+        lyrics: currentSectionLyrics.join('\n')
       })
     }
 
-    if (sections.length === 0) {
-      sections.push({
-        lyrics: lyrics.substring(0, 450)
+    if (rawSections.length === 0) {
+      const cleanedLyrics = lyrics
+        .replace(/\[\[.*?\]\]/g, '')
+        .replace(/\[Metronome\]/gi, '')
+        .replace(/^---$/gm, '')
+        .trim()
+      
+      rawSections.push({
+        name: 'Verse',
+        lyrics: cleanedLyrics.substring(0, 450)
       })
     }
 
@@ -73,23 +96,46 @@ export class ElevenLabsService {
     const negativeStyles: string[] = []
 
     if (genres.length > 0) {
-      positiveStyles.push(...genres)
+      positiveStyles.push(...genres.slice(0, 3))
     }
 
     if (prompt.toLowerCase().includes('808')) {
-      positiveStyles.push('808 bass', 'heavy bass')
+      positiveStyles.push('heavy 808 bass')
     }
     if (prompt.toLowerCase().includes('aggressive')) {
-      positiveStyles.push('aggressive', 'intense')
+      positiveStyles.push('aggressive vocals')
     }
     if (prompt.toLowerCase().includes('experimental')) {
       positiveStyles.push('experimental')
     }
-    if (prompt.toLowerCase().includes('pristine') || prompt.toLowerCase().includes('polish')) {
-      positiveStyles.push('high production quality')
-    }
 
-    negativeStyles.push('generic', 'bland', 'soft', 'mellow')
+    negativeStyles.push('generic', 'soft')
+
+    const durationMs = durationSeconds * 1000
+    const avgSectionDuration = Math.floor(durationMs / rawSections.length)
+
+    const sections: CompositionSection[] = rawSections.map((section, idx) => {
+      const sectionLyrics = section.lyrics.substring(0, 450)
+      const lyricLines = sectionLyrics.split('\n').filter(l => l.trim())
+      
+      const sectionDuration = idx === rawSections.length - 1
+        ? durationMs - (avgSectionDuration * (rawSections.length - 1))
+        : avgSectionDuration
+      
+      const lineDuration = lyricLines.length > 0 ? Math.floor(sectionDuration / lyricLines.length) : sectionDuration
+
+      return {
+        section_name: section.name,
+        lyrics: sectionLyrics,
+        positive_local_styles: positiveStyles.length > 0 ? positiveStyles : ['energetic'],
+        negative_local_styles: negativeStyles,
+        duration_ms: sectionDuration,
+        lines: lyricLines.map(text => ({
+          text,
+          duration_ms: lineDuration
+        }))
+      }
+    })
 
     return {
       positive_global_styles: positiveStyles.length > 0 ? positiveStyles : ['energetic'],
@@ -119,10 +165,11 @@ export class ElevenLabsService {
         requestBody.composition_plan = this.buildCompositionPlan(
           options.lyrics,
           options.text,
-          options.genres
+          options.genres,
+          durationSeconds
         )
       } else {
-        requestBody.prompt = options.text
+        requestBody.prompt = options.text.substring(0, 450)
         requestBody.prompt_influence = options.prompt_influence || 0.5
       }
 
