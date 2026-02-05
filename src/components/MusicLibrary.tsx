@@ -4,7 +4,7 @@ import { Button } from './ui/button'
 import { ScrollArea } from './ui/scroll-area'
 import { MusicLibrary, LibraryTrack } from '@/lib/musicLibrary'
 import { downloadAudio } from '@/lib/elevenLabsService'
-import { Play, DownloadSimple, Trash, MusicNotes, Calendar, Clock, Sliders as SlidersIcon, Share } from '@phosphor-icons/react'
+import { Play, DownloadSimple, Trash, MusicNotes, Calendar, Clock, Sliders as SlidersIcon, Share, ArrowsClockwise } from '@phosphor-icons/react'
 import { Badge } from './ui/badge'
 import { toast } from 'sonner'
 import {
@@ -35,8 +35,20 @@ export function MusicLibraryDisplay({ onTrackAdded }: MusicLibraryDisplayProps) 
     setIsLoading(true)
     try {
       const libraryTracks = await MusicLibrary.getAll()
+      console.log('Loaded tracks from library:', libraryTracks.length)
+      libraryTracks.forEach((track, idx) => {
+        console.log(`Track ${idx + 1}:`, {
+          id: track.id,
+          hasAudioUrl: !!track.result.audioUrl,
+          hasAudioBlob: !!track.result.metadata?.audioBlob,
+          hasBase64: !!track.audioBlobBase64,
+          base64Length: track.audioBlobBase64?.length,
+          blobSize: track.result.metadata?.audioBlob?.size
+        })
+      })
       setTracks(libraryTracks)
     } catch (error) {
+      console.error('Failed to load library:', error)
       toast.error('Failed to load library')
     } finally {
       setIsLoading(false)
@@ -115,17 +127,29 @@ export function MusicLibraryDisplay({ onTrackAdded }: MusicLibraryDisplayProps) 
               {tracks.length} {tracks.length === 1 ? 'track' : 'tracks'}
             </Badge>
           </div>
-          {tracks.length > 0 && (
+          <div className="flex gap-2">
             <Button
               size="sm"
               variant="outline"
-              onClick={handleClearAll}
+              onClick={loadTracks}
+              disabled={isLoading}
               className="gap-2"
             >
-              <Trash className="h-4 w-4" />
-              Clear All
+              <ArrowsClockwise className="h-4 w-4" />
+              Refresh
             </Button>
-          )}
+            {tracks.length > 0 && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleClearAll}
+                className="gap-2"
+              >
+                <Trash className="h-4 w-4" />
+                Clear All
+              </Button>
+            )}
+          </div>
         </div>
 
         <ScrollArea className="h-[500px] pr-4">
@@ -138,9 +162,21 @@ export function MusicLibraryDisplay({ onTrackAdded }: MusicLibraryDisplayProps) 
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-base mb-2 truncate">
-                      {track.title}
-                    </h3>
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className="font-semibold text-base truncate">
+                        {track.title}
+                      </h3>
+                      {!track.result.audioUrl && !track.audioBlobBase64 && (
+                        <Badge variant="destructive" className="text-xs">
+                          No Audio
+                        </Badge>
+                      )}
+                      {track.audioBlobBase64 && !track.result.audioUrl && (
+                        <Badge variant="outline" className="text-xs text-yellow-500 border-yellow-500">
+                          Needs Refresh
+                        </Badge>
+                      )}
+                    </div>
                     
                     <div className="flex flex-wrap gap-2 mb-2">
                       {track.config.genres.slice(0, 3).map((genre) => (
@@ -171,7 +207,7 @@ export function MusicLibraryDisplay({ onTrackAdded }: MusicLibraryDisplayProps) 
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    {track.result.audioUrl && (
+                    {(track.result.audioUrl || track.audioBlobBase64) && (
                       <>
                         <Button
                           size="sm"
@@ -179,10 +215,19 @@ export function MusicLibraryDisplay({ onTrackAdded }: MusicLibraryDisplayProps) 
                           className="gap-2 bg-accent hover:bg-accent/90 text-accent-foreground"
                           onClick={(e) => {
                             e.stopPropagation()
-                            const audio = new Audio(track.result.audioUrl)
-                            audio.play()
-                            setPlayingTrackId(track.id)
-                            audio.onended = () => setPlayingTrackId(null)
+                            try {
+                              if (track.result.audioUrl) {
+                                const audio = new Audio(track.result.audioUrl)
+                                audio.play()
+                                setPlayingTrackId(track.id)
+                                audio.onended = () => setPlayingTrackId(null)
+                              } else {
+                                toast.error('Audio URL not available')
+                              }
+                            } catch (error) {
+                              console.error('Playback error:', error)
+                              toast.error('Failed to play audio')
+                            }
                           }}
                         >
                           <Play className="h-4 w-4" weight="fill" />
@@ -196,12 +241,29 @@ export function MusicLibraryDisplay({ onTrackAdded }: MusicLibraryDisplayProps) 
                             try {
                               const blob = track.result.metadata?.audioBlob
                               
-                              if (blob && blob instanceof Blob && blob.size > 0) {
-                                downloadAudio(blob, `${track.title}.mp3`)
-                                toast.success('Download started!')
-                              } else {
-                                throw new Error('No audio data available for this track')
+                              if (!blob) {
+                                console.error('No audioBlob in metadata for track:', track.id)
+                                console.log('Track data:', {
+                                  hasMetadata: !!track.result.metadata,
+                                  hasAudioUrl: !!track.result.audioUrl,
+                                  hasBase64: !!track.audioBlobBase64,
+                                  base64Length: track.audioBlobBase64?.length
+                                })
+                                throw new Error('No audio data available - try refreshing the page')
                               }
+                              
+                              if (!(blob instanceof Blob)) {
+                                console.error('audioBlob is not a Blob:', typeof blob)
+                                throw new Error('Invalid audio data format')
+                              }
+                              
+                              if (blob.size === 0) {
+                                console.error('audioBlob has zero size')
+                                throw new Error('Audio data is empty')
+                              }
+                              
+                              downloadAudio(blob, `${track.title}.mp3`)
+                              toast.success('Download started!')
                             } catch (error) {
                               console.error('Download error for track:', track.id, error)
                               toast.error(error instanceof Error ? error.message : 'Failed to download audio')
@@ -317,13 +379,22 @@ export function MusicLibraryDisplay({ onTrackAdded }: MusicLibraryDisplayProps) 
                 </div>
               )}
 
-              {selectedTrack.result.audioUrl && (
+              {(selectedTrack.result.audioUrl || selectedTrack.audioBlobBase64) && (
                 <div className="flex gap-2">
                   <Button
                     className="flex-1 gap-2 bg-accent hover:bg-accent/90 text-accent-foreground"
                     onClick={() => {
-                      const audio = new Audio(selectedTrack.result.audioUrl)
-                      audio.play()
+                      try {
+                        if (selectedTrack.result.audioUrl) {
+                          const audio = new Audio(selectedTrack.result.audioUrl)
+                          audio.play()
+                        } else {
+                          toast.error('Audio URL not available')
+                        }
+                      } catch (error) {
+                        console.error('Playback error:', error)
+                        toast.error('Failed to play audio')
+                      }
                     }}
                   >
                     <Play className="h-5 w-5" weight="fill" />
@@ -335,12 +406,29 @@ export function MusicLibraryDisplay({ onTrackAdded }: MusicLibraryDisplayProps) 
                       try {
                         const blob = selectedTrack.result.metadata?.audioBlob
                         
-                        if (blob && blob instanceof Blob && blob.size > 0) {
-                          downloadAudio(blob, `${selectedTrack.title}.mp3`)
-                          toast.success('Download started!')
-                        } else {
-                          throw new Error('No audio data available for this track')
+                        if (!blob) {
+                          console.error('No audioBlob in metadata for track:', selectedTrack.id)
+                          console.log('Track data:', {
+                            hasMetadata: !!selectedTrack.result.metadata,
+                            hasAudioUrl: !!selectedTrack.result.audioUrl,
+                            hasBase64: !!selectedTrack.audioBlobBase64,
+                            base64Length: selectedTrack.audioBlobBase64?.length
+                          })
+                          throw new Error('No audio data available - try refreshing the page')
                         }
+                        
+                        if (!(blob instanceof Blob)) {
+                          console.error('audioBlob is not a Blob:', typeof blob)
+                          throw new Error('Invalid audio data format')
+                        }
+                        
+                        if (blob.size === 0) {
+                          console.error('audioBlob has zero size')
+                          throw new Error('Audio data is empty')
+                        }
+                        
+                        downloadAudio(blob, `${selectedTrack.title}.mp3`)
+                        toast.success('Download started!')
                       } catch (error) {
                         console.error('Download error for track:', selectedTrack.id, error)
                         toast.error(error instanceof Error ? error.message : 'Failed to download audio')

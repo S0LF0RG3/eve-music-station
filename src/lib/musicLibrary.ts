@@ -64,20 +64,22 @@ export class MusicLibrary {
         const blob = this.base64ToBlob(track.audioBlobBase64, 'audio/mpeg')
         
         if (blob && blob instanceof Blob && blob.size > 0) {
-          if (!track.result.audioUrl) {
-            track.result.audioUrl = URL.createObjectURL(blob)
-          }
+          track.result.audioUrl = URL.createObjectURL(blob)
           
           if (!track.result.metadata) {
             track.result.metadata = {}
           }
           track.result.metadata.audioBlob = blob
+          
+          console.log('Successfully hydrated audio for track:', track.id, 'Blob size:', blob.size)
         } else {
-          console.warn('Invalid blob created for track:', track.id, 'Blob size:', blob?.size)
+          console.error('Failed to create valid blob for track:', track.id, 'Size:', blob?.size)
         }
       } catch (error) {
-        console.error('Error hydrating track audio:', error, track.id)
+        console.error('Error hydrating track audio:', error, 'Track ID:', track.id)
       }
+    } else {
+      console.warn('No audioBlobBase64 data found for track:', track.id)
     }
     
     return track
