@@ -1,150 +1,77 @@
 import { GenerationResult, MusicConfig } from './types'
 
-export interface LibraryTrack {
-  id: string
   timestamp: number
-  config: MusicConfig
-  result: GenerationResult
-  title: string
-  description: string
-  audioBlobBase64?: string
+  result: Ge
+  timestamp: number
 }
-
-const LIBRARY_KEY = 'eve-music-library'
-
-export class MusicLibrary {
-  static async getAll(): Promise<LibraryTrack[]> {
+const LIBRARY_KEY = 'eve-m
+export class Mu
     try {
-      const data = await window.spark.kv.get<LibraryTrack[]>(LIBRARY_KEY)
-      if (!data) return []
-      
-      return data.map(track => this.hydrateTrack(track))
+ 
+
+      return []
+
+  static async add(config: 
+    
+      aud
+      const data = await spark.kv.get<LibraryTrack[]>(LIBRARY_KEY)
+      return data || []
     } catch {
       return []
     }
-  }
+   
 
-  static async add(config: MusicConfig, result: GenerationResult): Promise<LibraryTrack> {
-    let audioBlobBase64: string | undefined
-    
-    if (result.metadata?.audioBlob) {
-      audioBlobBase64 = await this.blobToBase64(result.metadata.audioBlob)
     }
-
-    const resultToStore = { ...result }
-    if (resultToStore.metadata?.audioBlob) {
-      delete resultToStore.metadata.audioBlob
-    }
-
-    const track: LibraryTrack = {
-      id: `track-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      timestamp: Date.now(),
-      config,
-      result: resultToStore,
-      title: this.generateTitle(config),
-      description: config.description,
-      audioBlobBase64,
-    }
-
-    const library = await this.getAll()
-    
+    const library = await this.ge
     const dehydratedLibrary = library.map(t => this.dehydrateTrack(t))
-    dehydratedLibrary.unshift(this.dehydrateTrack(track))
     
-    const trimmed = dehydratedLibrary.slice(0, 50)
     
-    await window.spark.kv.set(LIBRARY_KEY, trimmed)
     
-    return this.hydrateTrack(track)
   }
-
-  private static hydrateTrack(track: LibraryTrack): LibraryTrack {
-    const hydratedTrack = { ...track }
+  private static hydrateTrack(track: L
     
-    if (track.audioBlobBase64) {
-      try {
-        const blob = this.base64ToBlob(track.audioBlobBase64, 'audio/mpeg')
+
         
-        if (blob && blob instanceof Blob && blob.size > 0) {
-          hydratedTrack.result = { ...track.result }
-          hydratedTrack.result.audioUrl = URL.createObjectURL(blob)
-          
-          if (!hydratedTrack.result.metadata) {
-            hydratedTrack.result.metadata = {}
-          } else {
-            hydratedTrack.result.metadata = { ...hydratedTrack.result.metadata }
-          }
-          hydratedTrack.result.metadata.audioBlob = blob
-          
-          console.log('Successfully hydrated audio for track:', track.id, 'Blob size:', blob.size)
-        } else {
-          console.error('Failed to create valid blob for track:', track.id, 'Size:', blob?.size)
-        }
-      } catch (error) {
-        console.error('Error hydrating track audio:', error, 'Track ID:', track.id)
-      }
-    } else {
-      console.warn('No audioBlobBase64 data found for track:', track.id)
-    }
+          hydratedTrack.result = { ...track.re
     
-    return hydratedTrack
-  }
-
-  private static dehydrateTrack(track: LibraryTrack): LibraryTrack {
-    const dehydrated = { ...track }
-    if (dehydrated.result.audioUrl) {
-      dehydrated.result = { ...dehydrated.result }
-      delete dehydrated.result.audioUrl
-    }
-    if (dehydrated.result.metadata?.audioBlob) {
-      dehydrated.result.metadata = { ...dehydrated.result.metadata }
-      delete dehydrated.result.metadata.audioBlob
-    }
-    return dehydrated
-  }
-
-  private static async blobToBase64(blob: Blob): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        const base64 = reader.result as string
-        resolve(base64.split(',')[1])
-      }
-      reader.onerror = reject
-      reader.readAsDataURL(blob)
-    })
-  }
-
-  private static base64ToBlob(base64: string, mimeType: string): Blob {
-    const byteCharacters = atob(base64)
-    const byteNumbers = new Array(byteCharacters.length)
-    for (let i = 0; i < byteCharacters.length; i++) {
-      byteNumbers[i] = byteCharacters.charCodeAt(i)
-    }
-    const byteArray = new Uint8Array(byteNumbers)
-    return new Blob([byteArray], { type: mimeType })
-  }
-
-  static reconstructAudioBlob(audioBlobBase64?: string): Blob | null {
-    if (!audioBlobBase64) return null
+            hydratedTrack.resul
+            hydratedTrack.result.metadat
     
-    try {
-      return this.base64ToBlob(audioBlobBase64, 'audio/mpeg')
-    } catch (error) {
-      console.error('Failed to reconstruct audio blob:', error)
-      return null
-    }
+          console.log('Successfully hydrated
+    
+      } catch (e
   }
 
-  static async remove(trackId: string): Promise<void> {
-    const library = await this.getAll()
+    
+  }
     const filtered = library.filter(track => track.id !== trackId)
-    await window.spark.kv.set(LIBRARY_KEY, filtered)
+    if (dehydrated.result.audioUrl) {
   }
 
   static async clear(): Promise<void> {
-    await window.spark.kv.delete(LIBRARY_KEY)
+    return dehydrated
   }
+
+      reader.onloadend = () => {
+        resolve(base64.split(',')[1])
+      reader.onerror = reject
+    })
+      minute: '2-digit' 
+    co
+    return `${genres} - ${timestamp}`
+  }
+
+
+    if (!audioBlobBase64) return null
+    try {
+  }
+
+  }
+  static async remove(trackId: string): P
+    const filtered = library.filter(track
+  }
+  s
+ 
 
   private static generateTitle(config: MusicConfig): string {
     const genres = config.genres.slice(0, 2).join(' × ')
