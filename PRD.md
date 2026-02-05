@@ -40,11 +40,18 @@ A dual-mode agentic music generation application for creating Suno prompts and g
 - **Success criteria**: Comfortable typing experience, 500 char limit with counter, integrates with final output, enhance feature works smoothly
 
 ### Lyrics & Voice Input
-- **Functionality**: Theme input, custom lyrics textarea, voice type selector (Male/Female/Instrumental), vocal style selector (19+ presets including growl, falsetto, death metal, operatic, rap, etc.), enhance option (Suno only), randomize option (Suno only)
-- **Purpose**: Gives users control over lyrical content and vocal style/delivery, or lets AI generate creative lyrics. For Suno: formatted lyrics with meta-tags. For ElevenLabs: plain text lyrics (450 char max) sent to API. Vocal style presets guide the generation toward specific vocal delivery techniques.
-- **Trigger**: Enter lyrics theme/concept or write full custom lyrics, select voice type, select vocal style preset, optionally enhance or randomize (Suno only)
-- **Progression**: (Optional) Enter theme → Write lyrics or leave blank → Select voice type → Select vocal style (growl, falsetto, death metal, soft, powerful, raspy, operatic, etc.) → (Suno: Optional enhance/randomize with meta-tags) OR (ElevenLabs: Auto-generate concise lyrics ≤450 chars with style context) → Lyrics integrated into generation → (ElevenLabs: Lyrics and style sent to API, displayed in results)
-- **Success criteria**: Intuitive layout, Suno mode has full meta-tag support with enhance/randomize, ElevenLabs mode enforces 450 char limit and generates plain text lyrics with vocal style context, voice selection clear, 19+ vocal style presets available (none, soft, powerful, raspy, breathy, operatic, rap, spoken-word, whispered, choir, harmonized, auto-tuned, growl, falsetto, death-metal, scream, guttural, melodic, aggressive), custom lyrics override auto-generation, lyrics displayed in results for both modes, vocal style influences generation prompt
+- **Functionality**: Theme input, custom lyrics textarea, voice type selector (Male/Female/Instrumental), vocal style selector (19+ presets including growl, falsetto, death metal, operatic, rap, etc.) with smart genre-based recommendations, enhance option (Suno only), randomize option (Suno only)
+- **Purpose**: Gives users control over lyrical content and vocal style/delivery, or lets AI generate creative lyrics. For Suno: formatted lyrics with meta-tags. For ElevenLabs: plain text lyrics (450 char max) sent to API. Vocal style presets guide the generation toward specific vocal delivery techniques. Smart recommendations analyze selected genres and suggest compatible vocal styles with confidence percentages.
+- **Trigger**: Enter lyrics theme/concept or write full custom lyrics, select voice type, select vocal style preset (or use auto-recommend), optionally enhance or randomize (Suno only)
+- **Progression**: (Optional) Enter theme → Write lyrics or leave blank → Select voice type → View genre-based vocal recommendations (if genres selected) → Select vocal style manually or click "Auto-select best" → System shows top 5 recommended styles with confidence scores → Click recommended style to apply → (Suno: Optional enhance/randomize with meta-tags) OR (ElevenLabs: Auto-generate concise lyrics ≤450 chars with style context) → Lyrics integrated into generation → (ElevenLabs: Lyrics and style sent to API, displayed in results) → System notifies if current style is not ideal for selected genres
+- **Success criteria**: Intuitive layout, Suno mode has full meta-tag support with enhance/randomize, ElevenLabs mode enforces 450 char limit and generates plain text lyrics with vocal style context, voice selection clear, 19+ vocal style presets available (none, soft, powerful, raspy, breathy, operatic, rap, spoken-word, whispered, choir, harmonized, auto-tuned, growl, falsetto, death-metal, scream, guttural, melodic, aggressive), custom lyrics override auto-generation, lyrics displayed in results for both modes, vocal style influences generation prompt, recommendations appear automatically when genres change, confidence percentages help users make informed choices, auto-select feature works reliably, toast notifications suggest better styles when current selection conflicts with genres
+
+### Vocal Style Recommendations (New)
+- **Functionality**: Intelligent genre-aware system that suggests optimal vocal styles based on selected music genres, showing confidence percentages and reasoning
+- **Purpose**: Helps users choose appropriate vocal styles that match their genre selection, enhancing output quality and reducing mismatches
+- **Trigger**: Automatically activates when genres are selected and voice type is not instrumental
+- **Progression**: Select genres → System analyzes genre-vocal mappings → Top 5 compatible styles displayed with confidence scores → User can click any recommendation to apply → "Auto-select best" button applies highest-confidence style → System shows toast notification if current style conflicts with genres → Recommendations update dynamically as genres change → Each style shows reasoning (e.g., "Perfect for Trap. Works well with Hip-Hop.")
+- **Success criteria**: Recommendations appear instantly when genres change, confidence scores accurately reflect genre compatibility (80%+ green, 60-79% accent, <60% yellow), auto-select applies best match, toast suggestions are helpful and actionable, recommendations persist until genres change, visual feedback distinguishes recommended vs current style, system covers all 40+ genres in library, reasoning text is concise and informative, works in both Suno and ElevenLabs modes
 
 ### Music Generation
 - **Functionality**: Primary action that orchestrates the entire generation process - creates Suno exports or actual playable music via ElevenLabs API, automatically saves to library
@@ -119,6 +126,10 @@ A dual-mode agentic music generation application for creating Suno prompts and g
 - **Audio download**: Generate timestamped filename, proper MP3 format, handle blob URLs properly
 - **Lyrics too long**: Automatically truncate to 450 chars for ElevenLabs with ellipsis, show warning to user
 - **Instrumental with lyrics**: Hide lyrics input when instrumental selected, clear any entered lyrics
+- **No vocal recommendations**: If genre not in mapping system, allow any vocal style without recommendations
+- **Conflicting vocal style**: Show non-intrusive suggestion to change style if current selection conflicts with genres
+- **Multiple genre vocal conflicts**: Prioritize most-selected genre characteristics, show blended recommendations
+- **Vocal style changes during typing**: Don't interrupt user's lyrics input when recommendations update
 
 ## Design Direction
 

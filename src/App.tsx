@@ -16,8 +16,10 @@ import { AlgorithmDisplay } from './components/AlgorithmDisplay'
 import { ResultsDisplay } from './components/ResultsDisplay'
 import { VoiceSelector } from './components/VoiceSelector'
 import { VocalStyleSelector } from './components/VocalStyleSelector'
+import { VocalRecommendations } from './components/VocalRecommendations'
 import { MusicLibraryDisplay } from './components/MusicLibrary'
 import { SharePage } from './components/SharePage'
+import { getBestVocalStyle, shouldSuggestVocalChange } from './lib/vocalRecommendations'
 import { toast } from 'sonner'
 import { Toaster } from './components/ui/sonner'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './components/ui/dialog'
@@ -97,6 +99,27 @@ function MainApp() {
       setAlgorithms([])
     }
   }, [genres, weirdness])
+
+  useEffect(() => {
+    if ((genres ?? []).length > 0 && voiceType !== 'instrumental' && vocalStyle !== 'none') {
+      const suggestion = shouldSuggestVocalChange(vocalStyle ?? 'none', genres ?? [])
+      
+      if (suggestion.shouldSuggest && suggestion.suggestedStyle && suggestion.reason) {
+        toast.info(suggestion.reason, {
+          duration: 5000,
+          action: {
+            label: 'Apply',
+            onClick: () => {
+              if (suggestion.suggestedStyle) {
+                setVocalStyle(suggestion.suggestedStyle)
+                toast.success(`Vocal style changed to ${suggestion.suggestedStyle}`)
+              }
+            }
+          }
+        })
+      }
+    }
+  }, [genres])
 
   useEffect(() => {
     setupApiRoutes()
@@ -402,7 +425,16 @@ function MainApp() {
                     <VocalStyleSelector 
                       value={vocalStyle ?? 'none'} 
                       onChange={setVocalStyle}
+                      genres={genres ?? []}
                     />
+
+                    {(genres ?? []).length > 0 && vocalStyle !== 'none' && (
+                      <VocalRecommendations
+                        genres={genres ?? []}
+                        currentStyle={vocalStyle ?? 'none'}
+                        onSelectStyle={setVocalStyle}
+                      />
+                    )}
 
                     <div className="space-y-3">
                       <label htmlFor="elevenlabs-lyrics-theme" className="text-sm font-medium block">
@@ -471,7 +503,16 @@ function MainApp() {
                   <VocalStyleSelector 
                     value={vocalStyle ?? 'none'} 
                     onChange={setVocalStyle}
+                    genres={genres ?? []}
                   />
+
+                  {(genres ?? []).length > 0 && vocalStyle !== 'none' && (
+                    <VocalRecommendations
+                      genres={genres ?? []}
+                      currentStyle={vocalStyle ?? 'none'}
+                      onSelectStyle={setVocalStyle}
+                    />
+                  )}
 
                   <div className="space-y-3">
                     <label htmlFor="lyrics-theme" className="text-sm font-medium block">

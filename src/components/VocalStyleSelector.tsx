@@ -1,11 +1,13 @@
 import { VocalStyle } from '@/lib/types'
 import { Button } from '@/components/ui/button'
-import { Microphone } from '@phosphor-icons/react'
+import { Microphone, Sparkle } from '@phosphor-icons/react'
+import { getBestVocalStyle } from '@/lib/vocalRecommendations'
 
 interface VocalStyleSelectorProps {
   value: VocalStyle
   onChange: (style: VocalStyle) => void
   disabled?: boolean
+  genres?: string[]
 }
 
 const VOCAL_STYLES: { value: VocalStyle; label: string; description: string }[] = [
@@ -30,12 +32,36 @@ const VOCAL_STYLES: { value: VocalStyle; label: string; description: string }[] 
   { value: 'aggressive', label: 'Aggressive', description: 'Intense, forceful delivery' },
 ]
 
-export function VocalStyleSelector({ value, onChange, disabled }: VocalStyleSelectorProps) {
+export function VocalStyleSelector({ value, onChange, disabled, genres }: VocalStyleSelectorProps) {
+  const handleAutoRecommend = () => {
+    if (!genres || genres.length === 0) return
+    
+    const bestStyle = getBestVocalStyle(genres)
+    if (bestStyle) {
+      onChange(bestStyle)
+    }
+  }
+
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-2">
-        <Microphone className="h-4 w-4 text-accent" weight="bold" />
-        <label className="text-sm font-medium">Vocal Style</label>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Microphone className="h-4 w-4 text-accent" weight="bold" />
+          <label className="text-sm font-medium">Vocal Style</label>
+        </div>
+        
+        {genres && genres.length > 0 && (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={handleAutoRecommend}
+            disabled={disabled}
+            className="gap-2 h-7 text-xs"
+          >
+            <Sparkle className="h-3 w-3" />
+            Auto-select best
+          </Button>
+        )}
       </div>
       
       <div className="flex flex-wrap gap-2">
