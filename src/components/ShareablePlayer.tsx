@@ -46,19 +46,7 @@ export function ShareablePlayer({ trackId, embedded = false }: ShareablePlayerPr
     const loadedTrack = await MusicLibrary.getById(trackId)
     
     if (loadedTrack) {
-      let audioUrl = loadedTrack.result.audioUrl
-      
-      if (!audioUrl && loadedTrack.audioBlobBase64) {
-        const blob = MusicLibrary.reconstructAudioBlob(loadedTrack.audioBlobBase64)
-        if (blob) {
-          audioUrl = URL.createObjectURL(blob)
-          loadedTrack.result.audioUrl = audioUrl
-          if (!loadedTrack.result.metadata) {
-            loadedTrack.result.metadata = {}
-          }
-          loadedTrack.result.metadata.audioBlob = blob
-        }
-      }
+      const audioUrl = loadedTrack.result.audioUrl
       
       setTrack(loadedTrack)
 
@@ -197,17 +185,10 @@ export function ShareablePlayer({ trackId, embedded = false }: ShareablePlayerPr
                 variant="outline"
                 onClick={async () => {
                   try {
-                    let blob = track.result.metadata?.audioBlob
+                    const audioUrl = track.result.audioUrl
                     
-                    if (!blob && track.audioBlobBase64) {
-                      blob = MusicLibrary.reconstructAudioBlob(track.audioBlobBase64)
-                    }
-                    
-                    if (blob && blob instanceof Blob && blob.size > 0) {
-                      downloadAudio(blob, `${track.title}.mp3`)
-                      toast.success('Download started!')
-                    } else if (track.result.audioUrl) {
-                      const res = await fetch(track.result.audioUrl)
+                    if (audioUrl) {
+                      const res = await fetch(audioUrl)
                       if (!res.ok) {
                         throw new Error('Failed to fetch audio')
                       }
@@ -248,13 +229,13 @@ export function ShareablePlayer({ trackId, embedded = false }: ShareablePlayerPr
           </div>
         </div>
 
-        {!embedded && track.description && (
+        {!embedded && track.config.description && (
           <div className="pt-4 border-t border-border/50">
             <h4 className="font-semibold text-sm uppercase tracking-wide text-accent mb-2">
               Description
             </h4>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              {track.description}
+              {track.config.description}
             </p>
           </div>
         )}

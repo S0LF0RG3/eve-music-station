@@ -182,7 +182,7 @@ export function MusicLibraryDisplay({ onTrackAdded }: MusicLibraryDisplayProps) 
                     </div>
 
                     <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
-                      {track.description}
+                      {track.config.description || 'No description'}
                     </p>
 
                     <div className="flex items-center gap-4 text-xs text-muted-foreground">
@@ -211,14 +211,7 @@ export function MusicLibraryDisplay({ onTrackAdded }: MusicLibraryDisplayProps) 
                           onClick={(e) => {
                             e.stopPropagation()
                             try {
-                              let audioUrl = track.result.audioUrl
-                              
-                              if (!audioUrl && track.audioBlobBase64) {
-                                const blob = MusicLibrary.reconstructAudioBlob(track.audioBlobBase64)
-                                if (blob) {
-                                  audioUrl = URL.createObjectURL(blob)
-                                }
-                              }
+                              const audioUrl = track.result.audioUrl
                               
                               if (audioUrl) {
                                 const audio = new Audio(audioUrl)
@@ -243,19 +236,14 @@ export function MusicLibraryDisplay({ onTrackAdded }: MusicLibraryDisplayProps) 
                           onClick={async (e) => {
                             e.stopPropagation()
                             try {
-                              let blob = track.result.metadata?.audioBlob
+                              const audioUrl = track.result.audioUrl
                               
-                              if (!blob && track.audioBlobBase64) {
-                                blob = MusicLibrary.reconstructAudioBlob(track.audioBlobBase64)
-                              }
-                              
-                              if (!blob) {
+                              if (!audioUrl) {
                                 throw new Error('No audio data available')
                               }
                               
-                              if (!(blob instanceof Blob)) {
-                                throw new Error('Invalid audio data format')
-                              }
+                              const response = await fetch(audioUrl)
+                              const blob = await response.blob()
                               
                               if (blob.size === 0) {
                                 throw new Error('Audio data is empty')
@@ -334,7 +322,7 @@ export function MusicLibraryDisplay({ onTrackAdded }: MusicLibraryDisplayProps) 
                   Description
                 </h4>
                 <p className="text-sm text-muted-foreground">
-                  {selectedTrack.description}
+                  {selectedTrack.config.description || 'No description'}
                 </p>
               </div>
 
@@ -384,14 +372,7 @@ export function MusicLibraryDisplay({ onTrackAdded }: MusicLibraryDisplayProps) 
                     className="flex-1 gap-2 bg-accent hover:bg-accent/90 text-accent-foreground"
                     onClick={() => {
                       try {
-                        let audioUrl = selectedTrack.result.audioUrl
-                        
-                        if (!audioUrl && selectedTrack.audioBlobBase64) {
-                          const blob = MusicLibrary.reconstructAudioBlob(selectedTrack.audioBlobBase64)
-                          if (blob) {
-                            audioUrl = URL.createObjectURL(blob)
-                          }
-                        }
+                        const audioUrl = selectedTrack.result.audioUrl
                         
                         if (audioUrl) {
                           const audio = new Audio(audioUrl)
@@ -412,19 +393,14 @@ export function MusicLibraryDisplay({ onTrackAdded }: MusicLibraryDisplayProps) 
                     variant="outline"
                     onClick={async () => {
                       try {
-                        let blob = selectedTrack.result.metadata?.audioBlob
+                        const audioUrl = selectedTrack.result.audioUrl
                         
-                        if (!blob && selectedTrack.audioBlobBase64) {
-                          blob = MusicLibrary.reconstructAudioBlob(selectedTrack.audioBlobBase64)
-                        }
-                        
-                        if (!blob) {
+                        if (!audioUrl) {
                           throw new Error('No audio data available')
                         }
                         
-                        if (!(blob instanceof Blob)) {
-                          throw new Error('Invalid audio data format')
-                        }
+                        const response = await fetch(audioUrl)
+                        const blob = await response.blob()
                         
                         if (blob.size === 0) {
                           throw new Error('Audio data is empty')

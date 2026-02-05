@@ -65,7 +65,7 @@ export async function handleMusicGenerationRequest(
       }
     }
 
-    const track = await MusicLibrary.add(config, result)
+    const trackId = await MusicLibrary.add(config, result)
 
     return {
       success: true,
@@ -75,7 +75,7 @@ export async function handleMusicGenerationRequest(
       stylePrompt: result.stylePrompt,
       generationPrompt: result.generationPrompt,
       metadata: result.metadata,
-      trackId: track.id,
+      trackId: trackId,
     }
   } catch (error) {
     return {
