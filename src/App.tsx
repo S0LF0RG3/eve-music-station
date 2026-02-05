@@ -7,20 +7,25 @@ import { Button } from './components/ui/button'
 import { Tabs, TabsList, TabsTrigger } from './components/ui/tabs'
 import { Card } from './components/ui/card'
 import { Textarea } from './components/ui/textarea'
-import { MusicNotes, Lightning, ArrowsClockwise, Sliders as SlidersIcon } from '@phosphor-icons/react'
+import { MusicNotes, Lightning, ArrowsClockwise, Sliders as SlidersIcon, Sparkle, Shuffle } from '@phosphor-icons/react'
 import { GenreSelector } from './components/GenreSelector'
 import { CosmicSlider } from './components/CosmicSlider'
 import { AlgorithmDisplay } from './components/AlgorithmDisplay'
 import { ResultsDisplay } from './components/ResultsDisplay'
+import { VoiceSelector } from './components/VoiceSelector'
 import { toast } from 'sonner'
 import { Toaster } from './components/ui/sonner'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './components/ui/dialog'
 import { ScrollArea } from './components/ui/scroll-area'
+import { Switch } from './components/ui/switch'
+import { Label } from './components/ui/label'
 
 function App() {
   const [mode, setMode] = useKV<GenerationMode>('eve-music-mode', 'suno')
   const [genres, setGenres] = useKV<string[]>('eve-music-genres', [])
   const [description, setDescription] = useKV<string>('eve-music-description', '')
+  const [lyricsTheme, setLyricsTheme] = useKV<string>('eve-music-lyrics-theme', '')
+  const [customLyrics, setCustomLyrics] = useKV<string>('eve-music-custom-lyrics', '')
   const [voiceType, setVoiceType] = useKV<VoiceType>('eve-music-voice', 'instrumental')
   const [weirdness, setWeirdness] = useKV<number>('eve-music-weirdness', 50)
   const [style, setStyle] = useKV<number>('eve-music-style', 50)
@@ -34,11 +39,17 @@ function App() {
   const [analysis, setAnalysis] = useState<{ weirdness: string; style: string; audio: string; overall: string } | null>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [isRecommending, setIsRecommending] = useState(false)
+  const [isEnhancingDescription, setIsEnhancingDescription] = useState(false)
+  const [isEnhancingLyrics, setIsEnhancingLyrics] = useState(false)
+  const [randomizeStyle, setRandomizeStyle] = useState(false)
+  const [randomizeLyrics, setRandomizeLyrics] = useState(false)
 
   const config: MusicConfig = {
     mode: mode ?? 'suno',
     genres: genres ?? [],
     description: description ?? '',
+    lyricsTheme: lyricsTheme ?? '',
+    customLyrics: customLyrics ?? '',
     voiceType: voiceType ?? 'instrumental',
     weirdness: weirdness ?? 50,
     style: style ?? 50,
@@ -70,7 +81,10 @@ function App() {
 
     try {
       const generator = new MusicGenerator(config)
-      const generationResult = await generator.generate()
+      const generationResult = await generator.generate({ 
+        randomizeStyle: randomizeStyle && mode === 'suno',
+        randomizeLyrics: randomizeLyrics && mode === 'suno'
+      })
       setResult(generationResult)
 
       if (generationResult.success) {
@@ -83,6 +97,49 @@ function App() {
       console.error(error)
     } finally {
       setIsGenerating(false)
+    }
+  }
+
+  const handleEnhanceDescription = async () => {
+    if (!(description ?? '').trim()) {
+      toast.error('Please enter a description first')
+      return
+    }
+
+    setIsEnhancingDescription(true)
+
+    try {
+      const generator = new MusicGenerator(config)
+      const enhanced = await generator.enhanceDescription(description ?? '')
+      setDescription(enhanced)
+      toast.success('Description enhanced!')
+    } catch (error) {
+      toast.error('Failed to enhance description')
+    } finally {
+      setIsEnhancingDescription(false)
+    }
+  }
+
+  const handleEnhanceLyrics = async () => {
+    if (!(customLyrics ?? '').trim() && !(lyricsTheme ?? '').trim()) {
+      toast.error('Please enter lyrics or a theme first')
+      return
+    }
+
+    setIsEnhancingLyrics(true)
+
+    try {
+      const generator = new MusicGenerator(config)
+      const enhanced = await generator.enhanceLyrics(
+        customLyrics ?? lyricsTheme ?? '', 
+        lyricsTheme ?? undefined
+      )
+      setCustomLyrics(enhanced)
+      toast.success('Lyrics enhanced!')
+    } catch (error) {
+      toast.error('Failed to enhance lyrics')
+    } finally {
+      setIsEnhancingLyrics(false)
     }
   }
 
@@ -198,11 +255,97 @@ function App() {
             />
           </Card>
 
+          {mode === 'suno' && (
+            <Card className="p-6 backdrop-cosmic border-accent/20 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <MusicNotes className="h-5 w-5 text-accent" weight="fill" />
+                  <h3 className="text-sm font-medium uppercase tracking-wide">Lyrics & Voice</h3>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <label htmlFor="lyrics-theme" className="text-sm font-medium block">
+                  Theme or Concept (Optional)
+                </label>
+                <Textarea
+                  id="lyrics-theme"
+                  value={lyricsTheme ?? ''}
+                  onChange={(e) => setLyricsTheme(e.target.value)}
+                  placeholder="e.g., heartbreak in the city, cosmic journey, rebellion..."
+                  className="min-h-[60px] resize-none bg-background/50 font-mono text-sm"
+                  maxLength={200}
+                />
+                <p className="text-xs text-muted-foreground">{(lyricsTheme ?? '').length}/200 - Guides lyric generation</p>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label htmlFor="custom-lyrics" className="text-sm font-medium block">
+                    Custom Lyrics (Optional)
+                  </label>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={handleEnhanceLyrics}
+                    disabled={isEnhancingLyrics || (!(customLyrics ?? '').trim() && !(lyricsTheme ?? '').trim())}
+                    className="gap-2 h-7"
+                  >
+                    <Sparkle className="h-3 w-3" />
+                    {isEnhancingLyrics ? 'Enhancing...' : 'Enhance'}
+                  </Button>
+                </div>
+                <Textarea
+                  id="custom-lyrics"
+                  value={customLyrics ?? ''}
+                  onChange={(e) => setCustomLyrics(e.target.value)}
+                  placeholder="Write your own lyrics or let Eve generate them. You can also write ideas and enhance them with the button above..."
+                  className="min-h-[150px] resize-none bg-background/50 font-mono text-sm"
+                  maxLength={2000}
+                />
+                <div className="flex justify-between items-center">
+                  <p className="text-xs text-muted-foreground">
+                    {(customLyrics ?? '').length}/2000 - Leave blank to auto-generate
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      id="randomize-lyrics"
+                      checked={randomizeLyrics}
+                      onCheckedChange={setRandomizeLyrics}
+                    />
+                    <Label htmlFor="randomize-lyrics" className="text-xs cursor-pointer">
+                      Randomize on generate
+                    </Label>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <label className="text-sm font-medium block">Voice Type</label>
+                <VoiceSelector value={voiceType ?? 'instrumental'} onChange={setVoiceType} />
+              </div>
+            </Card>
+          )}
+
           <Card className="p-6 backdrop-cosmic border-accent/20">
             <div className="space-y-3">
-              <label htmlFor="description" className="text-sm font-medium uppercase tracking-wide block">
-                Description
-              </label>
+              <div className="flex items-center justify-between">
+                <label htmlFor="description" className="text-sm font-medium uppercase tracking-wide block">
+                  Description
+                </label>
+                {mode === 'suno' && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={handleEnhanceDescription}
+                    disabled={isEnhancingDescription || !(description ?? '').trim()}
+                    className="gap-2 h-7"
+                  >
+                    <Sparkle className="h-3 w-3" />
+                    {isEnhancingDescription ? 'Enhancing...' : 'Enhance'}
+                  </Button>
+                )}
+              </div>
               <Textarea
                 id="description"
                 value={description ?? ''}
@@ -284,18 +427,38 @@ function App() {
                 }
               />
 
-              {mode === 'elevenlabs' && (
-                <CosmicSlider
-                  label="Duration (seconds)"
-                  value={duration ?? 60}
-                  onChange={setDuration}
-                  min={10}
-                  max={300}
-                  step={5}
-                  description="Track length for generation (10-300 seconds)"
-                />
-              )}
+              <CosmicSlider
+                label="Duration (seconds)"
+                value={duration ?? 60}
+                onChange={setDuration}
+                min={30}
+                max={300}
+                step={10}
+                description={`${duration ?? 60}s - ${
+                  (duration ?? 60) < 60
+                    ? 'Short format'
+                    : (duration ?? 60) < 120
+                    ? 'Standard length'
+                    : (duration ?? 60) < 180
+                    ? 'Long format'
+                    : 'Extended format'
+                }`}
+              />
             </div>
+
+            {mode === 'suno' && (
+              <div className="mt-6 flex items-center justify-end gap-2">
+                <Switch
+                  id="randomize-style"
+                  checked={randomizeStyle}
+                  onCheckedChange={setRandomizeStyle}
+                />
+                <Label htmlFor="randomize-style" className="text-sm cursor-pointer flex items-center gap-2">
+                  <Shuffle className="h-4 w-4" />
+                  Randomize style prompt
+                </Label>
+              </div>
+            )}
           </Card>
 
           {algorithms.length > 0 && (

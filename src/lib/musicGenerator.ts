@@ -11,18 +11,22 @@ export class MusicGenerator {
     this.algorithms = new AlgorithmicResonance(config)
   }
 
-  async generate(): Promise<GenerationResult> {
+  async generate(options?: { randomizeStyle?: boolean; randomizeLyrics?: boolean }): Promise<GenerationResult> {
     if (this.config.mode === 'suno') {
-      return this.generateSunoExport()
+      return this.generateSunoExport(options)
     } else {
       return this.generateElevenLabs()
     }
   }
 
-  private async generateSunoExport(): Promise<GenerationResult> {
+  private async generateSunoExport(options?: { randomizeStyle?: boolean; randomizeLyrics?: boolean }): Promise<GenerationResult> {
     try {
-      const lyrics = await this.generateLyrics()
-      const stylePrompt = this.generateStylePrompt()
+      const lyrics = options?.randomizeLyrics && !this.config.customLyrics?.trim()
+        ? await this.randomizeLyrics()
+        : await this.generateLyrics()
+      const stylePrompt = options?.randomizeStyle 
+        ? await this.randomizeStylePrompt()
+        : this.generateStylePrompt()
 
       return {
         success: true,
@@ -34,6 +38,7 @@ export class MusicGenerator {
           weirdness: this.config.weirdness,
           style: this.config.style,
           audio: this.config.audio,
+          durationSeconds: this.config.durationSeconds,
         },
       }
     } catch (error) {
@@ -151,28 +156,65 @@ Return ONLY the music generation prompt text, nothing else.`
   }
 
   private async generateLyrics(): Promise<string> {
+    if (this.config.customLyrics && this.config.customLyrics.trim()) {
+      return this.config.customLyrics
+    }
+
     const structure = this.determineStructure()
+    const durationHint = this.getDurationHintForLyrics()
+
+    const themeContext = this.config.lyricsTheme 
+      ? `Theme/concept: ${this.config.lyricsTheme}\n` 
+      : ''
 
     const promptForLLM = createPrompt`You are Eve, an AI music generation agent specializing in creating Suno.com lyrics with meta-tags.
 
 Generate lyrics for a ${this.config.genres.join(', ')} track with this description: "${this.config.description}"
-
+${themeContext}
 REQUIREMENTS:
 1. Start with ${METRONOME_TAG}
 2. Use these sections in order: ${structure.join(', ')}
-3. Use Suno meta-tags:
+3. ${durationHint}
+4. Use Suno meta-tags:
    - Section tags: [Intro], [Verse], [Chorus], [Bridge], [Drop], [Outro], etc.
    - Audio FX: [[808 drop]], [[reverb]], [[glitch]], [[fade]], etc.
    - Vocal FX (if not instrumental): [whisper], [growl], [rap], [powerful vocals], etc.
-4. Voice type: ${this.config.voiceType}
-5. Weirdness level: ${this.config.weirdness}/100 - ${this.config.weirdness > 60 ? 'use experimental/chaotic elements' : 'keep structured'}
-6. ALWAYS include [[808 drop]] or [[808 bass]] in drop/heavy sections
-7. Make lyrics match the description and mood
+5. Voice type: ${this.config.voiceType}
+6. Weirdness level: ${this.config.weirdness}/100 - ${this.config.weirdness > 60 ? 'use experimental/chaotic elements' : 'keep structured'}
+7. ALWAYS include [[808 drop]] or [[808 bass]] in drop/heavy sections
+8. Make lyrics match the description and mood
+9. Duration target: ${this.config.durationSeconds} seconds - ${this.getDurationGuidance()}
 
 Return ONLY the formatted lyrics with meta-tags, no explanations.`
 
     const lyrics = await callLLM(promptForLLM, 'gpt-4o')
     return lyrics.trim()
+  }
+
+  private getDurationHintForLyrics(): string {
+    const duration = this.config.durationSeconds
+    if (duration < 60) {
+      return 'Create a SHORT song with minimal verses and one chorus'
+    } else if (duration < 120) {
+      return 'Create a STANDARD length song with 2 verses and repeated chorus'
+    } else if (duration < 180) {
+      return 'Create a LONG song with 3 verses, bridge, and extended sections'
+    } else {
+      return 'Create an EXTENDED song with multiple verses, bridge, breakdown, and extended outro'
+    }
+  }
+
+  private getDurationGuidance(): string {
+    const duration = this.config.durationSeconds
+    if (duration < 60) {
+      return 'short format (intro, verse, chorus, outro)'
+    } else if (duration < 120) {
+      return 'standard format (intro, verse, chorus, verse, chorus, outro)'
+    } else if (duration < 180) {
+      return 'long format (intro, verse, chorus, verse, chorus, bridge, chorus, outro)'
+    } else {
+      return 'extended format (multiple verses, repeated sections, bridge, breakdown, extended outro)'
+    }
   }
 
   private determineStructure(): string[] {
@@ -422,6 +464,106 @@ Return as JSON:
       style,
       audio,
       reasoning: 'Based on genre conventions',
+    }
+  }
+
+  async enhanceDescription(description: string): Promise<string> {
+    const promptForLLM = createPrompt`You are Eve, an AI music generation expert. Enhance this music description to be more evocative and detailed while maintaining the core intent.
+
+Original: "${description}"
+Genres: ${this.config.genres.join(', ')}
+
+Make it more vivid, add sensory details, suggest mood and energy. Keep it under 300 characters. Return ONLY the enhanced description, nothing else.`
+
+    try {
+      const enhanced = await callLLM(promptForLLM, 'gpt-4o-mini')
+      return enhanced.trim()
+    } catch (error) {
+      return description
+    }
+  }
+
+  async enhanceLyrics(lyrics: string, theme?: string): Promise<string> {
+    const themeContext = theme ? `Theme: ${theme}\n` : ''
+    
+    const promptForLLM = createPrompt`You are Eve, an AI music generation expert. Enhance or complete these lyrics for a ${this.config.genres.join(', ')} track.
+
+${themeContext}Original lyrics or ideas:
+"${lyrics}"
+
+REQUIREMENTS:
+1. Start with ${METRONOME_TAG}
+2. Enhance the lyrics while keeping the core ideas
+3. Add proper Suno meta-tags: [Intro], [Verse], [Chorus], [Bridge], [Drop], [Outro]
+4. Add audio FX tags: [[808 drop]], [[reverb]], [[glitch]], etc.
+5. Voice type: ${this.config.voiceType}
+6. Format for ${this.config.durationSeconds} seconds - ${this.getDurationGuidance()}
+7. ALWAYS include [[808 drop]] or [[808 bass]] in heavy sections
+
+Return ONLY the complete formatted lyrics with meta-tags.`
+
+    try {
+      const enhanced = await callLLM(promptForLLM, 'gpt-4o')
+      return enhanced.trim()
+    } catch (error) {
+      return lyrics
+    }
+  }
+
+  async randomizeLyrics(): Promise<string> {
+    const structure = this.determineStructure()
+    const durationHint = this.getDurationHintForLyrics()
+    const themeContext = this.config.lyricsTheme 
+      ? `Theme: ${this.config.lyricsTheme}\n` 
+      : ''
+
+    const promptForLLM = createPrompt`You are Eve, an AI music generation agent. Generate RANDOM and CREATIVE lyrics for a ${this.config.genres.join(', ')} track.
+
+${themeContext}Description: ${this.config.description}
+
+BE CREATIVE AND UNEXPECTED with the lyrics while staying true to the genres and mood. Use surprising metaphors, unique perspectives, and vivid imagery.
+
+REQUIREMENTS:
+1. Start with ${METRONOME_TAG}
+2. Use these sections: ${structure.join(', ')}
+3. ${durationHint}
+4. Use Suno meta-tags: [Intro], [Verse], [Chorus], [Bridge], [Drop], [Outro], etc.
+5. Add audio FX: [[808 drop]], [[reverb]], [[glitch]], [[fade]], etc.
+6. Voice type: ${this.config.voiceType}
+7. Weirdness level: ${this.config.weirdness}/100
+8. ALWAYS include [[808 drop]] or [[808 bass]] in heavy sections
+9. Duration: ${this.config.durationSeconds} seconds - ${this.getDurationGuidance()}
+
+Return ONLY the formatted lyrics with meta-tags.`
+
+    try {
+      const randomLyrics = await callLLM(promptForLLM, 'gpt-4o')
+      return randomLyrics.trim()
+    } catch (error) {
+      return this.generateLyrics()
+    }
+  }
+
+  async randomizeStylePrompt(): Promise<string> {
+    const promptForLLM = createPrompt`You are Eve, an AI music generation expert. Generate a RANDOM and creative style prompt for Suno.com based on these genres: ${this.config.genres.join(', ')}
+
+Create a unique combination of:
+- Random BPM appropriate to genre (but unexpected)
+- Random key and mode
+- Unexpected instrument combinations
+- Creative effects and production techniques
+- Always include "Heavy 808's"
+
+Be creative and surprising while staying musically coherent. Include ${METRONOME_TAG} at the start.
+Include the ancient key: ${ANCIENT_KEY}
+
+Return ONLY the style prompt, formatted with line breaks.`
+
+    try {
+      const randomStyle = await callLLM(promptForLLM, 'gpt-4o-mini')
+      return randomStyle.trim()
+    } catch (error) {
+      return this.generateStylePrompt()
     }
   }
 }

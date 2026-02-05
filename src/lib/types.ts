@@ -12,6 +12,8 @@ export interface MusicConfig {
   audio: number
   durationSeconds: number
   customGenre?: string
+  lyricsTheme?: string
+  customLyrics?: string
 }
 
 export interface AlgorithmInfo {

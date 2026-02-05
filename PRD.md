@@ -26,25 +26,32 @@ A dual-mode agentic music generation application for creating Suno prompts and g
 - **Success criteria**: Visual feedback on selection, max 3-4 genres enforced gracefully, clear selected state
 
 ### Algorithmic Slider Controls
-- **Functionality**: Three sliders (Weirdness 0-100, Style 0-100, Audio 0-100) controlling generation parameters
-- **Purpose**: Fine-tune the experimental nature, genre adherence, and production quality of output
+- **Functionality**: Four sliders (Weirdness 0-100, Style 0-100, Audio 0-100, Duration 30-300s) controlling generation parameters
+- **Purpose**: Fine-tune the experimental nature, genre adherence, production quality, and length of output
 - **Trigger**: Drag sliders or click track to set value
-- **Progression**: Adjust slider → Real-time value display updates → Algorithm intensity scales → Preview description updates → Mathematical formulas adapt
-- **Success criteria**: Smooth dragging, numerical feedback, helpful descriptions at current values, different behavior in each mode
+- **Progression**: Adjust slider → Real-time value display updates → Algorithm intensity scales → Preview description updates → Mathematical formulas adapt → Duration affects song structure and lyrics length
+- **Success criteria**: Smooth dragging, numerical feedback, helpful descriptions at current values, different behavior in each mode, duration properly influences output structure
 
 ### Description Input
-- **Functionality**: Text area for creative prompt describing desired sound, mood, energy
+- **Functionality**: Text area for creative prompt describing desired sound, mood, energy, with enhance option in Suno mode
 - **Purpose**: Captures user intent and influences lyric generation, algorithmic selection, and poetic essence
-- **Trigger**: Focus text area and type
-- **Progression**: Enter description → Character count updates → Eve analyzes intent (optional) → Algorithms selected based on content → Perlin seed generated from text
-- **Success criteria**: Comfortable typing experience, 500 char limit with counter, integrates with final output
+- **Trigger**: Focus text area and type, click enhance button to use AI to improve description
+- **Progression**: Enter description → Character count updates → (Optional) Click enhance → Eve analyzes and rewrites description → Algorithms selected based on content → Perlin seed generated from text
+- **Success criteria**: Comfortable typing experience, 500 char limit with counter, integrates with final output, enhance feature works smoothly
+
+### Lyrics & Voice Input (Suno Mode Only)
+- **Functionality**: Theme input, custom lyrics textarea, voice type selector (Male/Female/Instrumental), enhance option, randomize option
+- **Purpose**: Gives users control over lyrical content and vocal style, or lets AI generate creative lyrics
+- **Trigger**: Enter lyrics theme/concept or write full custom lyrics, select voice type, optionally enhance or randomize
+- **Progression**: (Optional) Enter theme → Write lyrics or leave blank → Select voice type → (Optional) Enhance to improve lyrics → (Optional) Enable randomize for creative generation → Lyrics integrated into generation
+- **Success criteria**: Intuitive layout, enhance improves lyrics quality, randomize creates unique creative output, voice selection clear, custom lyrics override auto-generation
 
 ### Music Generation
-- **Functionality**: Primary action that orchestrates the entire generation process
+- **Functionality**: Primary action that orchestrates the entire generation process with optional randomization
 - **Purpose**: Transforms all inputs into either Suno export files or actual music playback
 - **Trigger**: Click "Generate Suno Export" or "Generate Music" button
-- **Progression**: Click generate → Loading state with algorithm visualization → LLM processes inputs → Mathematical formulas calculated → Output generated → Results displayed with copy/download options
-- **Success criteria**: Clear loading states, error handling, generated content properly formatted, 808s always included, golden ratio signature present
+- **Progression**: Click generate → Loading state with algorithm visualization → LLM processes inputs → (If randomize enabled) Creative variations applied → Mathematical formulas calculated → Output generated → Results displayed with copy/download options
+- **Success criteria**: Clear loading states, error handling, generated content properly formatted, 808s always included, golden ratio signature present, randomization creates unique outputs
 
 ### Results Display
 - **Functionality**: Shows generated lyrics, style prompt (Suno) or audio player with download (ElevenLabs)
