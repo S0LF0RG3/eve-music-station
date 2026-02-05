@@ -104,6 +104,18 @@ export function ResultsDisplay({ result }: ResultsDisplayProps) {
       const filename = `eve-music-${timestamp}.mp3`
       downloadAudio(result.metadata.audioBlob, filename)
       toast.success('Download started!')
+    } else if (result.audioUrl) {
+      fetch(result.audioUrl)
+        .then(res => res.blob())
+        .then(blob => {
+          const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5)
+          const filename = `eve-music-${timestamp}.mp3`
+          downloadAudio(blob, filename)
+          toast.success('Download started!')
+        })
+        .catch(() => {
+          toast.error('Failed to download audio')
+        })
     }
   }
 

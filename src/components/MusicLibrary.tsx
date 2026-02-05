@@ -3,6 +3,7 @@ import { Card } from './ui/card'
 import { Button } from './ui/button'
 import { ScrollArea } from './ui/scroll-area'
 import { MusicLibrary, LibraryTrack } from '@/lib/musicLibrary'
+import { downloadAudio } from '@/lib/elevenLabsService'
 import { Play, DownloadSimple, Trash, MusicNotes, Calendar, Clock, Sliders as SlidersIcon, Share } from '@phosphor-icons/react'
 import { Badge } from './ui/badge'
 import { toast } from 'sonner'
@@ -192,10 +193,20 @@ export function MusicLibraryDisplay({ onTrackAdded }: MusicLibraryDisplayProps) 
                           variant="outline"
                           onClick={(e) => {
                             e.stopPropagation()
-                            const link = document.createElement('a')
-                            link.href = track.result.audioUrl!
-                            link.download = `${track.title}.mp3`
-                            link.click()
+                            if (track.result.metadata?.audioBlob) {
+                              downloadAudio(track.result.metadata.audioBlob, `${track.title}.mp3`)
+                              toast.success('Download started!')
+                            } else if (track.result.audioUrl) {
+                              fetch(track.result.audioUrl)
+                                .then(res => res.blob())
+                                .then(blob => {
+                                  downloadAudio(blob, `${track.title}.mp3`)
+                                  toast.success('Download started!')
+                                })
+                                .catch(() => {
+                                  toast.error('Failed to download audio')
+                                })
+                            }
                           }}
                         >
                           <DownloadSimple className="h-4 w-4" weight="bold" />
@@ -322,10 +333,20 @@ export function MusicLibraryDisplay({ onTrackAdded }: MusicLibraryDisplayProps) 
                   <Button
                     variant="outline"
                     onClick={() => {
-                      const link = document.createElement('a')
-                      link.href = selectedTrack.result.audioUrl!
-                      link.download = `${selectedTrack.title}.mp3`
-                      link.click()
+                      if (selectedTrack.result.metadata?.audioBlob) {
+                        downloadAudio(selectedTrack.result.metadata.audioBlob, `${selectedTrack.title}.mp3`)
+                        toast.success('Download started!')
+                      } else if (selectedTrack.result.audioUrl) {
+                        fetch(selectedTrack.result.audioUrl)
+                          .then(res => res.blob())
+                          .then(blob => {
+                            downloadAudio(blob, `${selectedTrack.title}.mp3`)
+                            toast.success('Download started!')
+                          })
+                          .catch(() => {
+                            toast.error('Failed to download audio')
+                          })
+                      }
                     }}
                   >
                     <DownloadSimple className="h-5 w-5" weight="bold" />
