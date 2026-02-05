@@ -20,6 +20,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { ScrollArea } from './components/ui/scroll-area'
 import { Switch } from './components/ui/switch'
 import { Label } from './components/ui/label'
+import { setupApiRoutes } from './lib/apiHandler'
 
 function App() {
   const [mode, setMode] = useKV<GenerationMode>('eve-music-mode', 'suno')
@@ -70,6 +71,10 @@ function App() {
       setAlgorithms([])
     }
   }, [genres, weirdness])
+
+  useEffect(() => {
+    setupApiRoutes()
+  }, [])
 
   const validateApiKey = async (key: string) => {
     if (!key || key.length < 20) {
