@@ -35,7 +35,7 @@ export class ElevenLabsService {
 
       console.log('ElevenLabs Music Generation API Request:', JSON.stringify(requestBody, null, 2))
 
-      const response = await fetch('https://api.elevenlabs.io/v1/music-generation', {
+      const response = await fetch('https://api.elevenlabs.io/v1/sound-generation', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
