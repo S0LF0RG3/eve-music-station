@@ -74,17 +74,22 @@ REQUIREMENTS:
    - Audio ${this.config.audio}: ${this.mapAudioToDescription(this.config.audio)}
 4. Add poetic essence: ${this.algorithms.getPoeticEssence()}
 5. Include structure hint based on ${this.config.durationSeconds}s duration
-6. Keep it under 500 characters but highly evocative
+6. Keep it under 400 characters but highly evocative and concise
 
 Return ONLY the music generation prompt text, nothing else.`
 
-      const enhancedPrompt = await callLLM(promptForLLM, 'gpt-4o-mini')
+      let enhancedPrompt = await callLLM(promptForLLM, 'gpt-4o-mini')
+      enhancedPrompt = enhancedPrompt.trim()
+
+      if (enhancedPrompt.length > 450) {
+        enhancedPrompt = enhancedPrompt.substring(0, 447) + '...'
+      }
 
       if (!apiKey) {
         return {
           success: true,
           mode: 'elevenlabs',
-          generationPrompt: enhancedPrompt.trim(),
+          generationPrompt: enhancedPrompt,
           durationMs: this.config.durationSeconds * 1000,
           metadata: {
             genres: this.config.genres,
@@ -103,7 +108,7 @@ Return ONLY the music generation prompt text, nothing else.`
       const promptInfluence = this.config.style / 100
 
       const musicResult = await elevenLabs.generateMusic({
-        text: enhancedPrompt.trim(),
+        text: enhancedPrompt,
         duration_seconds: Math.min(this.config.durationSeconds, 22),
         prompt_influence: promptInfluence,
       })
@@ -119,7 +124,7 @@ Return ONLY the music generation prompt text, nothing else.`
       return {
         success: true,
         mode: 'elevenlabs',
-        generationPrompt: enhancedPrompt.trim(),
+        generationPrompt: enhancedPrompt,
         audioUrl: musicResult.audioUrl,
         durationMs: this.config.durationSeconds * 1000,
         metadata: {
