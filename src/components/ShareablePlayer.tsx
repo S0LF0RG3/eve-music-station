@@ -15,6 +15,7 @@ import {
 } from '@phosphor-icons/react'
 import { Slider } from './ui/slider'
 import { toast } from 'sonner'
+import { Toaster } from './ui/sonner'
 
 interface ShareablePlayerProps {
   trackId: string
@@ -43,24 +44,43 @@ export function ShareablePlayer({ trackId, embedded = false }: ShareablePlayerPr
 
   const loadTrack = async () => {
     const loadedTrack = await MusicLibrary.getById(trackId)
-    setTrack(loadedTrack)
+    
+    if (loadedTrack) {
+      let audioUrl = loadedTrack.result.audioUrl
+      
+      if (!audioUrl && loadedTrack.audioBlobBase64) {
+        const blob = MusicLibrary.reconstructAudioBlob(loadedTrack.audioBlobBase64)
+        if (blob) {
+          audioUrl = URL.createObjectURL(blob)
+          loadedTrack.result.audioUrl = audioUrl
+          if (!loadedTrack.result.metadata) {
+            loadedTrack.result.metadata = {}
+          }
+          loadedTrack.result.metadata.audioBlob = blob
+        }
+      }
+      
+      setTrack(loadedTrack)
 
-    if (loadedTrack?.result.audioUrl) {
-      const audio = new Audio(loadedTrack.result.audioUrl)
-      audioRef.current = audio
+      if (audioUrl) {
+        const audio = new Audio(audioUrl)
+        audioRef.current = audio
 
-      audio.addEventListener('loadedmetadata', () => {
-        setDuration(audio.duration)
-      })
+        audio.addEventListener('loadedmetadata', () => {
+          setDuration(audio.duration)
+        })
 
-      audio.addEventListener('timeupdate', () => {
-        setCurrentTime(audio.currentTime)
-      })
+        audio.addEventListener('timeupdate', () => {
+          setCurrentTime(audio.currentTime)
+        })
 
-      audio.addEventListener('ended', () => {
-        setIsPlaying(false)
-        setCurrentTime(0)
-      })
+        audio.addEventListener('ended', () => {
+          setIsPlaying(false)
+          setCurrentTime(0)
+        })
+      }
+    } else {
+      setTrack(null)
     }
   }
 
@@ -120,8 +140,10 @@ export function ShareablePlayer({ trackId, embedded = false }: ShareablePlayerPr
   }
 
   return (
-    <Card className={`p-6 ${embedded ? 'bg-card/90 backdrop-blur-md border-accent/30' : 'backdrop-cosmic border-accent/20'} ${embedded ? 'max-w-2xl mx-auto' : ''}`}>
-      <div className="space-y-6">
+    <>
+      <Toaster />
+      <Card className={`p-6 ${embedded ? 'bg-card/90 backdrop-blur-md border-accent/30' : 'backdrop-cosmic border-accent/20'} ${embedded ? 'max-w-2xl mx-auto' : ''}`}>
+        <div className="space-y-6">
         <div className="text-center space-y-2">
           <div className="flex items-center justify-center gap-2 mb-2">
             <MusicNotes className="h-8 w-8 text-accent animate-float" weight="fill" />
@@ -175,19 +197,25 @@ export function ShareablePlayer({ trackId, embedded = false }: ShareablePlayerPr
                 variant="outline"
                 onClick={async () => {
                   try {
-                    if (track.result.metadata?.audioBlob) {
-                      downloadAudio(track.result.metadata.audioBlob, `${track.title}.mp3`)
+                    let blob = track.result.metadata?.audioBlob
+                    
+                    if (!blob && track.audioBlobBase64) {
+                      blob = MusicLibrary.reconstructAudioBlob(track.audioBlobBase64)
+                    }
+                    
+                    if (blob && blob instanceof Blob && blob.size > 0) {
+                      downloadAudio(blob, `${track.title}.mp3`)
                       toast.success('Download started!')
                     } else if (track.result.audioUrl) {
                       const res = await fetch(track.result.audioUrl)
                       if (!res.ok) {
                         throw new Error('Failed to fetch audio')
                       }
-                      const blob = await res.blob()
-                      if (!blob || blob.size === 0) {
+                      const fetchedBlob = await res.blob()
+                      if (!fetchedBlob || fetchedBlob.size === 0) {
                         throw new Error('Invalid audio data')
                       }
-                      downloadAudio(blob, `${track.title}.mp3`)
+                      downloadAudio(fetchedBlob, `${track.title}.mp3`)
                       toast.success('Download started!')
                     } else {
                       toast.error('No audio available to download')
@@ -277,5 +305,6 @@ export function ShareablePlayer({ trackId, embedded = false }: ShareablePlayerPr
         )}
       </div>
     </Card>
+    </>
   )
 }

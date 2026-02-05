@@ -171,11 +171,6 @@ export function MusicLibraryDisplay({ onTrackAdded }: MusicLibraryDisplayProps) 
                           No Audio
                         </Badge>
                       )}
-                      {track.audioBlobBase64 && !track.result.audioUrl && (
-                        <Badge variant="outline" className="text-xs text-yellow-500 border-yellow-500">
-                          Needs Refresh
-                        </Badge>
-                      )}
                     </div>
                     
                     <div className="flex flex-wrap gap-2 mb-2">
@@ -216,8 +211,17 @@ export function MusicLibraryDisplay({ onTrackAdded }: MusicLibraryDisplayProps) 
                           onClick={(e) => {
                             e.stopPropagation()
                             try {
-                              if (track.result.audioUrl) {
-                                const audio = new Audio(track.result.audioUrl)
+                              let audioUrl = track.result.audioUrl
+                              
+                              if (!audioUrl && track.audioBlobBase64) {
+                                const blob = MusicLibrary.reconstructAudioBlob(track.audioBlobBase64)
+                                if (blob) {
+                                  audioUrl = URL.createObjectURL(blob)
+                                }
+                              }
+                              
+                              if (audioUrl) {
+                                const audio = new Audio(audioUrl)
                                 audio.play()
                                 setPlayingTrackId(track.id)
                                 audio.onended = () => setPlayingTrackId(null)
@@ -239,26 +243,21 @@ export function MusicLibraryDisplay({ onTrackAdded }: MusicLibraryDisplayProps) 
                           onClick={async (e) => {
                             e.stopPropagation()
                             try {
-                              const blob = track.result.metadata?.audioBlob
+                              let blob = track.result.metadata?.audioBlob
+                              
+                              if (!blob && track.audioBlobBase64) {
+                                blob = MusicLibrary.reconstructAudioBlob(track.audioBlobBase64)
+                              }
                               
                               if (!blob) {
-                                console.error('No audioBlob in metadata for track:', track.id)
-                                console.log('Track data:', {
-                                  hasMetadata: !!track.result.metadata,
-                                  hasAudioUrl: !!track.result.audioUrl,
-                                  hasBase64: !!track.audioBlobBase64,
-                                  base64Length: track.audioBlobBase64?.length
-                                })
-                                throw new Error('No audio data available - try refreshing the page')
+                                throw new Error('No audio data available')
                               }
                               
                               if (!(blob instanceof Blob)) {
-                                console.error('audioBlob is not a Blob:', typeof blob)
                                 throw new Error('Invalid audio data format')
                               }
                               
                               if (blob.size === 0) {
-                                console.error('audioBlob has zero size')
                                 throw new Error('Audio data is empty')
                               }
                               
@@ -385,8 +384,17 @@ export function MusicLibraryDisplay({ onTrackAdded }: MusicLibraryDisplayProps) 
                     className="flex-1 gap-2 bg-accent hover:bg-accent/90 text-accent-foreground"
                     onClick={() => {
                       try {
-                        if (selectedTrack.result.audioUrl) {
-                          const audio = new Audio(selectedTrack.result.audioUrl)
+                        let audioUrl = selectedTrack.result.audioUrl
+                        
+                        if (!audioUrl && selectedTrack.audioBlobBase64) {
+                          const blob = MusicLibrary.reconstructAudioBlob(selectedTrack.audioBlobBase64)
+                          if (blob) {
+                            audioUrl = URL.createObjectURL(blob)
+                          }
+                        }
+                        
+                        if (audioUrl) {
+                          const audio = new Audio(audioUrl)
                           audio.play()
                         } else {
                           toast.error('Audio URL not available')
@@ -404,26 +412,21 @@ export function MusicLibraryDisplay({ onTrackAdded }: MusicLibraryDisplayProps) 
                     variant="outline"
                     onClick={async () => {
                       try {
-                        const blob = selectedTrack.result.metadata?.audioBlob
+                        let blob = selectedTrack.result.metadata?.audioBlob
+                        
+                        if (!blob && selectedTrack.audioBlobBase64) {
+                          blob = MusicLibrary.reconstructAudioBlob(selectedTrack.audioBlobBase64)
+                        }
                         
                         if (!blob) {
-                          console.error('No audioBlob in metadata for track:', selectedTrack.id)
-                          console.log('Track data:', {
-                            hasMetadata: !!selectedTrack.result.metadata,
-                            hasAudioUrl: !!selectedTrack.result.audioUrl,
-                            hasBase64: !!selectedTrack.audioBlobBase64,
-                            base64Length: selectedTrack.audioBlobBase64?.length
-                          })
-                          throw new Error('No audio data available - try refreshing the page')
+                          throw new Error('No audio data available')
                         }
                         
                         if (!(blob instanceof Blob)) {
-                          console.error('audioBlob is not a Blob:', typeof blob)
                           throw new Error('Invalid audio data format')
                         }
                         
                         if (blob.size === 0) {
-                          console.error('audioBlob has zero size')
                           throw new Error('Audio data is empty')
                         }
                         

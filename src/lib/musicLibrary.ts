@@ -59,17 +59,22 @@ export class MusicLibrary {
   }
 
   private static hydrateTrack(track: LibraryTrack): LibraryTrack {
+    const hydratedTrack = { ...track }
+    
     if (track.audioBlobBase64) {
       try {
         const blob = this.base64ToBlob(track.audioBlobBase64, 'audio/mpeg')
         
         if (blob && blob instanceof Blob && blob.size > 0) {
-          track.result.audioUrl = URL.createObjectURL(blob)
+          hydratedTrack.result = { ...track.result }
+          hydratedTrack.result.audioUrl = URL.createObjectURL(blob)
           
-          if (!track.result.metadata) {
-            track.result.metadata = {}
+          if (!hydratedTrack.result.metadata) {
+            hydratedTrack.result.metadata = {}
+          } else {
+            hydratedTrack.result.metadata = { ...hydratedTrack.result.metadata }
           }
-          track.result.metadata.audioBlob = blob
+          hydratedTrack.result.metadata.audioBlob = blob
           
           console.log('Successfully hydrated audio for track:', track.id, 'Blob size:', blob.size)
         } else {
@@ -82,7 +87,7 @@ export class MusicLibrary {
       console.warn('No audioBlobBase64 data found for track:', track.id)
     }
     
-    return track
+    return hydratedTrack
   }
 
   private static dehydrateTrack(track: LibraryTrack): LibraryTrack {
@@ -118,6 +123,17 @@ export class MusicLibrary {
     }
     const byteArray = new Uint8Array(byteNumbers)
     return new Blob([byteArray], { type: mimeType })
+  }
+
+  static reconstructAudioBlob(audioBlobBase64?: string): Blob | null {
+    if (!audioBlobBase64) return null
+    
+    try {
+      return this.base64ToBlob(audioBlobBase64, 'audio/mpeg')
+    } catch (error) {
+      console.error('Failed to reconstruct audio blob:', error)
+      return null
+    }
   }
 
   static async remove(trackId: string): Promise<void> {
