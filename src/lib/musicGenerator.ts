@@ -56,7 +56,7 @@ export class MusicGenerator {
         ? `\n- Vocal Style: ${this.config.vocalStyle} delivery`
         : ''
 
-      const promptForLLM = createPrompt`You are Eve, an AI music generation agent. Based on this music configuration, generate a detailed and evocative music/sound generation prompt for the ElevenLabs Text-to-Sound API.
+      const promptForLLM = createPrompt`You are Eve, an AI music generation agent. Based on this music configuration, generate a detailed and evocative music generation prompt for the ElevenLabs Music Generation API.
 
 Configuration:
 - Genres: ${this.config.genres.join(', ')}
@@ -68,7 +68,7 @@ Configuration:
 - Duration: ${this.config.durationSeconds} seconds
 
 CRITICAL REQUIREMENTS:
-1. MAXIMUM 400 characters - this is a hard API limit
+1. Create a comprehensive music prompt that describes the complete track
 2. ALWAYS include "heavy 808 bass and percussion" - this is mandatory
 3. Map sliders to descriptive terms:
    - Weirdness ${this.config.weirdness}: ${this.mapWeirdnessToDescription(this.config.weirdness)}
@@ -77,16 +77,13 @@ CRITICAL REQUIREMENTS:
 4. Add poetic essence: ${this.algorithms.getPoeticEssence()}
 5. Include structure hint based on ${this.config.durationSeconds}s duration
 ${this.config.vocalStyle && this.config.vocalStyle !== 'none' ? `6. Emphasize ${this.config.vocalStyle} vocal delivery style` : ''}
-7. Describe it as a complete music track with all instruments and production elements
+7. Describe it as a complete music track with all instruments, structure, and production elements
+8. Be detailed and evocative - the API understands natural language and musical terminology
 
-Be highly concise and evocative. Every word counts. Return ONLY the music generation prompt text, nothing else.`
+Return ONLY the music generation prompt text, nothing else.`
 
       let enhancedPrompt = await callLLM(promptForLLM, 'gpt-4o-mini')
       enhancedPrompt = enhancedPrompt.trim()
-
-      if (enhancedPrompt.length > 400) {
-        enhancedPrompt = enhancedPrompt.substring(0, 397) + '...'
-      }
 
       let lyrics: string | undefined = undefined
       if (this.config.voiceType !== 'instrumental') {
@@ -115,12 +112,10 @@ Be highly concise and evocative. Every word counts. Return ONLY the music genera
       const { ElevenLabsService } = await import('./elevenLabsService')
       const elevenLabs = new ElevenLabsService(apiKey)
 
-      const promptInfluence = this.config.style / 100
-
       const musicResult = await elevenLabs.generateMusic({
         text: enhancedPrompt,
-        duration_seconds: Math.min(Math.max(this.config.durationSeconds, 0.5), 22),
-        prompt_influence: promptInfluence,
+        duration_seconds: Math.min(Math.max(this.config.durationSeconds, 3), 300),
+        lyrics: lyrics,
         genres: this.config.genres,
       })
 
@@ -224,30 +219,25 @@ Be highly concise and evocative. Every word counts. Return ONLY the music genera
       ? `Vocal Style: ${this.config.vocalStyle} - write lyrics that complement this vocal delivery style\n`
       : ''
 
-    const promptForLLM = createPrompt`You are Eve, an AI music generation agent. Generate concise lyrics for ElevenLabs Music API for a ${this.config.genres.join(', ')} track.
+    const promptForLLM = createPrompt`You are Eve, an AI music generation agent. Generate lyrics for ElevenLabs Music Generation API for a ${this.config.genres.join(', ')} track.
 
 Description: "${this.config.description}"
 ${themeContext}${vocalStyleContext}Voice Type: ${this.config.voiceType}
 Duration: ${this.config.durationSeconds} seconds
 
-CRITICAL REQUIREMENTS:
-1. MAXIMUM 450 characters - this is a hard API limit for ElevenLabs
-2. NO meta-tags or special formatting like [Verse], [Chorus], etc.
-3. Just plain lyrics text that flows naturally
-4. Match the mood and energy described
-5. For ${this.config.voiceType} voice${this.config.vocalStyle && this.config.vocalStyle !== 'none' ? ` with ${this.config.vocalStyle} delivery` : ''}
-6. ${this.getDurationGuidance()}
+REQUIREMENTS:
+1. Write complete, natural lyrics that flow with the music
+2. NO meta-tags or special formatting like [Verse], [Chorus], etc. - just plain lyrics
+3. Match the mood and energy described
+4. For ${this.config.voiceType} voice${this.config.vocalStyle && this.config.vocalStyle !== 'none' ? ` with ${this.config.vocalStyle} delivery` : ''}
+5. ${this.getDurationGuidance()}
+6. The API understands natural language, so be expressive and detailed
+7. Include line breaks between verses/sections naturally
 
-Return ONLY the plain lyrics text, nothing else. Be concise but evocative.`
+Return ONLY the plain lyrics text with natural line breaks, nothing else.`
 
     const lyrics = await callLLM(promptForLLM, 'gpt-4o-mini')
-    let trimmedLyrics = lyrics.trim()
-
-    if (trimmedLyrics.length > 450) {
-      trimmedLyrics = trimmedLyrics.substring(0, 447) + '...'
-    }
-
-    return trimmedLyrics
+    return lyrics.trim()
   }
 
   private async generateLyrics(): Promise<string> {

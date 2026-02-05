@@ -22,20 +22,20 @@ export class ElevenLabsService {
 
   async generateMusic(options: ElevenLabsMusicGenerationOptions): Promise<ElevenLabsMusicGenerationResult> {
     try {
-      const durationSeconds = Math.min(Math.max(options.duration_seconds || 10, 0.5), 22)
+      const durationSeconds = Math.min(Math.max(options.duration_seconds || 60, 3), 300)
 
       const requestBody: any = {
-        text: options.text.substring(0, 450),
-        duration_seconds: durationSeconds,
+        prompt: options.text,
+        duration: durationSeconds,
       }
 
-      if (options.prompt_influence !== undefined) {
-        requestBody.prompt_influence = options.prompt_influence
+      if (options.lyrics && options.lyrics.trim()) {
+        requestBody.lyrics = options.lyrics
       }
 
-      console.log('ElevenLabs Text-to-Sound API Request:', JSON.stringify(requestBody, null, 2))
+      console.log('ElevenLabs Music Generation API Request:', JSON.stringify(requestBody, null, 2))
 
-      const response = await fetch('https://api.elevenlabs.io/v1/text-to-sound-effects', {
+      const response = await fetch('https://api.elevenlabs.io/v1/music-generation', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -56,6 +56,10 @@ export class ElevenLabsService {
               detailedError += ` - ${errorJson.detail}`
             } else if (errorJson.detail.message) {
               detailedError += ` - ${errorJson.detail.message}`
+            } else if (Array.isArray(errorJson.detail)) {
+              detailedError += ` - ${JSON.stringify(errorJson.detail)}`
+            } else {
+              detailedError += ` - ${JSON.stringify(errorJson.detail)}`
             }
           }
         } catch {

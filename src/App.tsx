@@ -342,8 +342,8 @@ function MainApp() {
                   </>
                 ) : (
                   <>
-                    <strong>ElevenLabs Mode:</strong> Generates music-like sound effects using ElevenLabs Text-to-Sound API.
-                    Requires valid API key. Supports 3s-22s duration (API limit). Currently generates instrumental tracks only.
+                    <strong>ElevenLabs Mode:</strong> Generates complete music tracks using ElevenLabs Music Generation API.
+                    Requires valid API key. Supports 3s-300s (5 minutes) duration. Supports instrumental and vocal tracks with lyrics.
                     Sliders functionally control the generation parameters.
                   </>
                 )}
@@ -608,12 +608,10 @@ function MainApp() {
                 value={duration ?? 60}
                 onChange={setDuration}
                 min={mode === 'elevenlabs' ? 3 : 30}
-                max={mode === 'elevenlabs' ? 22 : 300}
+                max={300}
                 step={mode === 'elevenlabs' ? 1 : 10}
                 description={`${duration ?? 60}s - ${
-                  mode === 'elevenlabs' 
-                    ? 'ElevenLabs sound generation'
-                    : (duration ?? 60) < 60
+                  (duration ?? 60) < 60
                     ? 'Short format'
                     : (duration ?? 60) < 120
                     ? 'Standard length'
@@ -625,7 +623,7 @@ function MainApp() {
 
               {mode === 'elevenlabs' && (
                 <div className="p-3 rounded-lg bg-accent/10 border border-accent/30 text-xs text-foreground/90">
-                  <strong>ElevenLabs Text-to-Sound API:</strong> Supports 0.5 to 22 seconds. Currently set to {Math.min(Math.max(duration ?? 60, 3), 22)}s.
+                  <strong>ElevenLabs Music Generation API:</strong> Supports 3 seconds to 5 minutes (300s). Currently set to {Math.min(Math.max(duration ?? 60, 3), 300)}s.
                 </div>
               )}
             </div>
