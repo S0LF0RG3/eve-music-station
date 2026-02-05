@@ -100,26 +100,28 @@ export function ResultsDisplay({ result }: ResultsDisplayProps) {
 
   const handleDownload = async () => {
     try {
-      if (result.metadata?.audioBlob) {
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5)
-        const filename = `eve-music-${timestamp}.mp3`
-        downloadAudio(result.metadata.audioBlob, filename)
-        toast.success('Download started!')
-      } else if (result.audioUrl) {
-        const res = await fetch(result.audioUrl)
-        if (!res.ok) {
-          throw new Error('Failed to fetch audio')
-        }
-        const blob = await res.blob()
-        if (!blob || blob.size === 0) {
-          throw new Error('Invalid audio data')
-        }
+      const blob = result.metadata?.audioBlob
+      
+      if (blob && blob instanceof Blob && blob.size > 0) {
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5)
         const filename = `eve-music-${timestamp}.mp3`
         downloadAudio(blob, filename)
         toast.success('Download started!')
+      } else if (result.audioUrl) {
+        const res = await fetch(result.audioUrl)
+        if (!res.ok) {
+          throw new Error('Failed to fetch audio from URL')
+        }
+        const fetchedBlob = await res.blob()
+        if (!fetchedBlob || fetchedBlob.size === 0) {
+          throw new Error('Downloaded audio is empty or invalid')
+        }
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5)
+        const filename = `eve-music-${timestamp}.mp3`
+        downloadAudio(fetchedBlob, filename)
+        toast.success('Download started!')
       } else {
-        toast.error('No audio available to download')
+        throw new Error('No audio data available to download')
       }
     } catch (error) {
       console.error('Download error:', error)

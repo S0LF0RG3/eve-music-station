@@ -194,25 +194,27 @@ export function MusicLibraryDisplay({ onTrackAdded }: MusicLibraryDisplayProps) 
                           onClick={async (e) => {
                             e.stopPropagation()
                             try {
-                              if (track.result.metadata?.audioBlob) {
-                                downloadAudio(track.result.metadata.audioBlob, `${track.title}.mp3`)
+                              const blob = track.result.metadata?.audioBlob
+                              
+                              if (blob && blob instanceof Blob && blob.size > 0) {
+                                downloadAudio(blob, `${track.title}.mp3`)
                                 toast.success('Download started!')
                               } else if (track.result.audioUrl) {
                                 const res = await fetch(track.result.audioUrl)
                                 if (!res.ok) {
-                                  throw new Error('Failed to fetch audio')
+                                  throw new Error('Failed to fetch audio from URL')
                                 }
-                                const blob = await res.blob()
-                                if (!blob || blob.size === 0) {
-                                  throw new Error('Invalid audio data')
+                                const fetchedBlob = await res.blob()
+                                if (!fetchedBlob || fetchedBlob.size === 0) {
+                                  throw new Error('Downloaded audio is empty or invalid')
                                 }
-                                downloadAudio(blob, `${track.title}.mp3`)
+                                downloadAudio(fetchedBlob, `${track.title}.mp3`)
                                 toast.success('Download started!')
                               } else {
-                                toast.error('No audio available to download')
+                                throw new Error('No audio data available for this track')
                               }
                             } catch (error) {
-                              console.error('Download error:', error)
+                              console.error('Download error for track:', track.id, error)
                               toast.error(error instanceof Error ? error.message : 'Failed to download audio')
                             }
                           }}
@@ -342,25 +344,27 @@ export function MusicLibraryDisplay({ onTrackAdded }: MusicLibraryDisplayProps) 
                     variant="outline"
                     onClick={async () => {
                       try {
-                        if (selectedTrack.result.metadata?.audioBlob) {
-                          downloadAudio(selectedTrack.result.metadata.audioBlob, `${selectedTrack.title}.mp3`)
+                        const blob = selectedTrack.result.metadata?.audioBlob
+                        
+                        if (blob && blob instanceof Blob && blob.size > 0) {
+                          downloadAudio(blob, `${selectedTrack.title}.mp3`)
                           toast.success('Download started!')
                         } else if (selectedTrack.result.audioUrl) {
                           const res = await fetch(selectedTrack.result.audioUrl)
                           if (!res.ok) {
-                            throw new Error('Failed to fetch audio')
+                            throw new Error('Failed to fetch audio from URL')
                           }
-                          const blob = await res.blob()
-                          if (!blob || blob.size === 0) {
-                            throw new Error('Invalid audio data')
+                          const fetchedBlob = await res.blob()
+                          if (!fetchedBlob || fetchedBlob.size === 0) {
+                            throw new Error('Downloaded audio is empty or invalid')
                           }
-                          downloadAudio(blob, `${selectedTrack.title}.mp3`)
+                          downloadAudio(fetchedBlob, `${selectedTrack.title}.mp3`)
                           toast.success('Download started!')
                         } else {
-                          toast.error('No audio available to download')
+                          throw new Error('No audio data available for this track')
                         }
                       } catch (error) {
-                        console.error('Download error:', error)
+                        console.error('Download error for track:', selectedTrack.id, error)
                         toast.error(error instanceof Error ? error.message : 'Failed to download audio')
                       }
                     }}

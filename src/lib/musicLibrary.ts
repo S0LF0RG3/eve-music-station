@@ -59,19 +59,21 @@ export class MusicLibrary {
   }
 
   private static hydrateTrack(track: LibraryTrack): LibraryTrack {
-    if (track.audioBlobBase64 && !track.result.audioUrl) {
+    if (track.audioBlobBase64) {
       try {
         const blob = this.base64ToBlob(track.audioBlobBase64, 'audio/mpeg')
         
         if (blob && blob instanceof Blob && blob.size > 0) {
-          track.result.audioUrl = URL.createObjectURL(blob)
+          if (!track.result.audioUrl) {
+            track.result.audioUrl = URL.createObjectURL(blob)
+          }
           
           if (!track.result.metadata) {
             track.result.metadata = {}
           }
           track.result.metadata.audioBlob = blob
         } else {
-          console.warn('Invalid blob created for track:', track.id)
+          console.warn('Invalid blob created for track:', track.id, 'Blob size:', blob?.size)
         }
       } catch (error) {
         console.error('Error hydrating track audio:', error, track.id)
