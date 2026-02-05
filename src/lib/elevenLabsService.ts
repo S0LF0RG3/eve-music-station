@@ -2,6 +2,7 @@ export interface ElevenLabsMusicGenerationOptions {
   text: string
   duration_seconds?: number
   prompt_influence?: number
+  lyrics?: string
 }
 
 export interface ElevenLabsMusicGenerationResult {
@@ -22,17 +23,28 @@ export class ElevenLabsService {
     try {
       const durationSeconds = Math.min(Math.max(options.duration_seconds || 60, 3), 300)
 
+      const requestBody: {
+        text: string
+        duration: number
+        prompt_influence: number
+        lyrics?: string
+      } = {
+        text: options.text,
+        duration: durationSeconds,
+        prompt_influence: options.prompt_influence || 0.5,
+      }
+
+      if (options.lyrics && options.lyrics.trim()) {
+        requestBody.lyrics = options.lyrics.trim()
+      }
+
       const response = await fetch('https://api.elevenlabs.io/v1/music-generation', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'xi-api-key': this.apiKey,
         },
-        body: JSON.stringify({
-          text: options.text,
-          duration: durationSeconds,
-          prompt_influence: options.prompt_influence || 0.5,
-        }),
+        body: JSON.stringify(requestBody),
       })
 
       if (!response.ok) {

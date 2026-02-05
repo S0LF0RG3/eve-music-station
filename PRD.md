@@ -39,12 +39,12 @@ A dual-mode agentic music generation application for creating Suno prompts and g
 - **Progression**: Enter description → Character count updates → (Optional) Click enhance → Eve analyzes and rewrites description → Algorithms selected based on content → Perlin seed generated from text
 - **Success criteria**: Comfortable typing experience, 500 char limit with counter, integrates with final output, enhance feature works smoothly
 
-### Lyrics & Voice Input (Suno Mode Only)
-- **Functionality**: Theme input, custom lyrics textarea, voice type selector (Male/Female/Instrumental), enhance option, randomize option
-- **Purpose**: Gives users control over lyrical content and vocal style, or lets AI generate creative lyrics
-- **Trigger**: Enter lyrics theme/concept or write full custom lyrics, select voice type, optionally enhance or randomize
-- **Progression**: (Optional) Enter theme → Write lyrics or leave blank → Select voice type → (Optional) Enhance to improve lyrics → (Optional) Enable randomize for creative generation → Lyrics integrated into generation
-- **Success criteria**: Intuitive layout, enhance improves lyrics quality, randomize creates unique creative output, voice selection clear, custom lyrics override auto-generation
+### Lyrics & Voice Input
+- **Functionality**: Theme input, custom lyrics textarea, voice type selector (Male/Female/Instrumental), enhance option (Suno only), randomize option (Suno only)
+- **Purpose**: Gives users control over lyrical content and vocal style, or lets AI generate creative lyrics. For Suno: formatted lyrics with meta-tags. For ElevenLabs: plain text lyrics (450 char max) sent to API.
+- **Trigger**: Enter lyrics theme/concept or write full custom lyrics, select voice type, optionally enhance or randomize (Suno only)
+- **Progression**: (Optional) Enter theme → Write lyrics or leave blank → Select voice type → (Suno: Optional enhance/randomize with meta-tags) OR (ElevenLabs: Auto-generate concise lyrics ≤450 chars) → Lyrics integrated into generation → (ElevenLabs: Lyrics sent to API, displayed in results)
+- **Success criteria**: Intuitive layout, Suno mode has full meta-tag support with enhance/randomize, ElevenLabs mode enforces 450 char limit and generates plain text lyrics, voice selection clear, custom lyrics override auto-generation, lyrics displayed in results for both modes
 
 ### Music Generation
 - **Functionality**: Primary action that orchestrates the entire generation process - creates Suno exports or actual playable music via ElevenLabs API, automatically saves to library
@@ -65,11 +65,11 @@ A dual-mode agentic music generation application for creating Suno prompts and g
 - **Success criteria**: Clear loading states, error handling, generated content properly formatted, 808s always included, golden ratio signature present, randomization creates unique outputs, ElevenLabs generates actual playable audio with download functionality
 
 ### Results Display
-- **Functionality**: Shows generated lyrics and style prompt (Suno) or audio player with playback controls and download (ElevenLabs)
-- **Purpose**: Delivers the final output in immediately usable format
+- **Functionality**: Shows generated lyrics and style prompt (Suno) or audio player with playback controls, download, generated lyrics, and prompt (ElevenLabs)
+- **Purpose**: Delivers the final output in immediately usable format with all relevant content
 - **Trigger**: Successful generation completion
-- **Progression**: Generation completes → Results fade in → Suno: formatted lyrics + style prompt with copy buttons → ElevenLabs: audio player with play/pause + waveform progress bar + download button + prompt display → Metadata shown
-- **Success criteria**: Beautiful formatting, syntax highlighting for tags, one-click copy, audio player works reliably with play/pause controls, progress tracking, download generates proper timestamped filename
+- **Progression**: Generation completes → Results fade in → Suno: formatted lyrics + style prompt with copy buttons → ElevenLabs: audio player with play/pause + waveform progress bar + download button + generated lyrics card (if vocals) + prompt display → Metadata shown
+- **Success criteria**: Beautiful formatting, syntax highlighting for tags (Suno), one-click copy, audio player works reliably with play/pause controls, progress tracking, download generates proper timestamped filename, lyrics displayed for both modes when applicable
 
 ### Algorithm Visualization
 - **Functionality**: Real-time display of active algorithms (Fibonacci, Golden Ratio, Perlin, etc.) and their parameters
@@ -85,12 +85,12 @@ A dual-mode agentic music generation application for creating Suno prompts and g
 - **Progression**: Click button → Modal/panel opens → LLM analyzes current config → Detailed description of expected output → Specific examples provided → Close to adjust
 - **Success criteria**: Quick response, helpful descriptions, mode-aware analysis
 
-### ElevenLabs API Integration (New)
-- **Functionality**: Secure API key storage, validation, and actual music generation using ElevenLabs Sound Generation API
-- **Purpose**: Enables real music creation without leaving the app
+### ElevenLabs API Integration
+- **Functionality**: Secure API key storage, validation, and actual music generation using ElevenLabs Music Generation API with lyrics support
+- **Purpose**: Enables real music creation with vocals/lyrics without leaving the app
 - **Trigger**: Enter API key in ElevenLabs mode, validate, then generate
-- **Progression**: Switch to ElevenLabs mode → Enter API key → Click validate → Success/error feedback → Generate music → API call with enhanced prompt → Audio returned → Player displays with download option
-- **Success criteria**: Secure key storage (browser-only), validation works, API calls succeed, audio plays correctly, proper error handling for API failures, 22-second duration limit enforced
+- **Progression**: Switch to ElevenLabs mode → Enter API key → Click validate → Success/error feedback → (Optional) Select voice type and enter lyrics → Generate music → API call with enhanced prompt and lyrics (if vocals selected) → Audio returned → Player displays with download option → Lyrics shown in results
+- **Success criteria**: Secure key storage (browser-only), validation works, API calls succeed with lyrics parameter, audio plays correctly, lyrics displayed in results, proper error handling for API failures (including text length errors), 3s-5min duration support, 450 char lyrics limit enforced
 - **Functionality**: "Recommend levels" button that auto-adjusts sliders based on genres and description
 - **Purpose**: Helps beginners or speeds up workflow with intelligent defaults
 - **Trigger**: Click recommend button
@@ -115,8 +115,10 @@ A dual-mode agentic music generation application for creating Suno prompts and g
 - **Audio playback issues**: Fallback download link, format information, browser compatibility note
 - **Missing API capabilities**: Graceful degradation if spark.llm unavailable, show static examples
 - **Invalid API key**: Clear validation error, link to ElevenLabs settings page, secure storage of valid keys
-- **ElevenLabs API errors**: Specific error messages for quota limits, invalid prompts, network issues
+- **ElevenLabs API errors**: Specific error messages for quota limits, invalid prompts, text length errors (450 char limit), network issues
 - **Audio download**: Generate timestamped filename, proper MP3 format, handle blob URLs properly
+- **Lyrics too long**: Automatically truncate to 450 chars for ElevenLabs with ellipsis, show warning to user
+- **Instrumental with lyrics**: Hide lyrics input when instrumental selected, clear any entered lyrics
 
 ## Design Direction
 

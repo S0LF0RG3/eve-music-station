@@ -317,7 +317,8 @@ function MainApp() {
                 ) : (
                   <>
                     <strong>ElevenLabs Mode:</strong> Generates and downloads actual music using ElevenLabs Music Generation API.
-                    Requires valid API key. Supports 3s-5min duration. Sliders functionally control the generation parameters.
+                    Requires valid API key. Supports 3s-5min duration, instrumental or with vocals/lyrics.
+                    Sliders functionally control the generation parameters.
                   </>
                 )}
               </p>
@@ -374,6 +375,63 @@ function MainApp() {
                   . Your key is stored securely in your browser.
                 </p>
               </div>
+            )}
+
+            {mode === 'elevenlabs' && (
+              <Card className="mt-6 p-6 backdrop-cosmic border-accent/20 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <MusicNotes className="h-5 w-5 text-accent" weight="fill" />
+                    <h3 className="text-sm font-medium uppercase tracking-wide">Lyrics & Voice (ElevenLabs)</h3>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <label className="text-sm font-medium block">Voice Type</label>
+                  <VoiceSelector value={voiceType ?? 'instrumental'} onChange={setVoiceType} />
+                  <p className="text-xs text-muted-foreground">
+                    Select "Male" or "Female" to add vocals to your track
+                  </p>
+                </div>
+
+                {voiceType !== 'instrumental' && (
+                  <>
+                    <div className="space-y-3">
+                      <label htmlFor="elevenlabs-lyrics-theme" className="text-sm font-medium block">
+                        Theme or Concept (Optional)
+                      </label>
+                      <Textarea
+                        id="elevenlabs-lyrics-theme"
+                        value={lyricsTheme ?? ''}
+                        onChange={(e) => setLyricsTheme(e.target.value)}
+                        placeholder="e.g., heartbreak in the city, cosmic journey, rebellion..."
+                        className="min-h-[60px] resize-none bg-background/50 font-mono text-sm"
+                        maxLength={200}
+                      />
+                      <p className="text-xs text-muted-foreground">{(lyricsTheme ?? '').length}/200 - Guides lyric generation</p>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <label htmlFor="elevenlabs-custom-lyrics" className="text-sm font-medium block">
+                          Custom Lyrics (Optional)
+                        </label>
+                      </div>
+                      <Textarea
+                        id="elevenlabs-custom-lyrics"
+                        value={customLyrics ?? ''}
+                        onChange={(e) => setCustomLyrics(e.target.value)}
+                        placeholder="Write your own lyrics or let Eve generate them based on your theme and description..."
+                        className="min-h-[120px] resize-none bg-background/50 font-mono text-sm"
+                        maxLength={450}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        {(customLyrics ?? '').length}/450 - Leave blank to auto-generate (ElevenLabs has a 450 character limit)
+                      </p>
+                    </div>
+                  </>
+                )}
+              </Card>
             )}
           </Card>
 

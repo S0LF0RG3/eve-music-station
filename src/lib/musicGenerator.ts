@@ -82,11 +82,17 @@ Be highly concise and evocative. Every word counts. Return ONLY the music genera
         enhancedPrompt = enhancedPrompt.substring(0, 397) + '...'
       }
 
+      let lyrics: string | undefined = undefined
+      if (this.config.voiceType !== 'instrumental') {
+        lyrics = await this.generateElevenLabsLyrics()
+      }
+
       if (!apiKey) {
         return {
           success: true,
           mode: 'elevenlabs',
           generationPrompt: enhancedPrompt,
+          lyrics,
           durationMs: this.config.durationSeconds * 1000,
           metadata: {
             genres: this.config.genres,
@@ -108,6 +114,7 @@ Be highly concise and evocative. Every word counts. Return ONLY the music genera
         text: enhancedPrompt,
         duration_seconds: Math.min(Math.max(this.config.durationSeconds, 3), 300),
         prompt_influence: promptInfluence,
+        lyrics,
       })
 
       if (!musicResult.success || !musicResult.audioUrl) {
@@ -122,6 +129,7 @@ Be highly concise and evocative. Every word counts. Return ONLY the music genera
         success: true,
         mode: 'elevenlabs',
         generationPrompt: enhancedPrompt,
+        lyrics,
         audioUrl: musicResult.audioUrl,
         durationMs: this.config.durationSeconds * 1000,
         metadata: {
@@ -193,6 +201,42 @@ Be highly concise and evocative. Every word counts. Return ONLY the music genera
     if (duration < 30) return 'Brief structure: intro, main section, outro'
     if (duration < 90) return 'Structure: intro, build, drop, breakdown, finale'
     return 'Extended structure: intro, verse, build, drop, breakdown, second drop, extended outro'
+  }
+
+  private async generateElevenLabsLyrics(): Promise<string> {
+    if (this.config.customLyrics && this.config.customLyrics.trim()) {
+      return this.config.customLyrics.trim()
+    }
+
+    const themeContext = this.config.lyricsTheme 
+      ? `Theme/concept: ${this.config.lyricsTheme}\n` 
+      : ''
+
+    const promptForLLM = createPrompt`You are Eve, an AI music generation agent. Generate concise lyrics for ElevenLabs Music API for a ${this.config.genres.join(', ')} track.
+
+Description: "${this.config.description}"
+${themeContext}
+Voice Type: ${this.config.voiceType}
+Duration: ${this.config.durationSeconds} seconds
+
+CRITICAL REQUIREMENTS:
+1. MAXIMUM 450 characters - this is a hard API limit for ElevenLabs
+2. NO meta-tags or special formatting like [Verse], [Chorus], etc.
+3. Just plain lyrics text that flows naturally
+4. Match the mood and energy described
+5. For ${this.config.voiceType} voice
+6. ${this.getDurationGuidance()}
+
+Return ONLY the plain lyrics text, nothing else. Be concise but evocative.`
+
+    const lyrics = await callLLM(promptForLLM, 'gpt-4o-mini')
+    let trimmedLyrics = lyrics.trim()
+
+    if (trimmedLyrics.length > 450) {
+      trimmedLyrics = trimmedLyrics.substring(0, 447) + '...'
+    }
+
+    return trimmedLyrics
   }
 
   private async generateLyrics(): Promise<string> {

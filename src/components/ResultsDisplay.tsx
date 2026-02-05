@@ -278,6 +278,26 @@ export function ResultsDisplay({ result }: ResultsDisplayProps) {
         </Card>
       )}
 
+      {result.lyrics && (
+        <Card className="p-6 backdrop-cosmic border-accent/20">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-lg font-bold glow-text">Generated Lyrics</h3>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => result.lyrics && handleCopy(result.lyrics, 'lyrics')}
+              className="gap-2"
+            >
+              {copiedLyrics ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+              {copiedLyrics ? 'Copied!' : 'Copy'}
+            </Button>
+          </div>
+          <ScrollArea className="h-[200px] rounded-md bg-background/50 p-4">
+            <pre className="text-sm font-mono whitespace-pre-wrap leading-relaxed">{result.lyrics}</pre>
+          </ScrollArea>
+        </Card>
+      )}
+
       <Card className="p-6 backdrop-cosmic border-accent/20">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-lg font-bold glow-text">Generation Prompt</h3>
