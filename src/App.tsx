@@ -16,6 +16,7 @@ import { AlgorithmDisplay } from './components/AlgorithmDisplay'
 import { ResultsDisplay } from './components/ResultsDisplay'
 import { VoiceSelector } from './components/VoiceSelector'
 import { MusicLibraryDisplay } from './components/MusicLibrary'
+import { SharePage } from './components/SharePage'
 import { toast } from 'sonner'
 import { Toaster } from './components/ui/sonner'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './components/ui/dialog'
@@ -25,6 +26,25 @@ import { Label } from './components/ui/label'
 import { setupApiRoutes } from './lib/apiHandler'
 
 function App() {
+  const [currentRoute, setCurrentRoute] = useState(window.location.pathname)
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setCurrentRoute(window.location.pathname)
+    }
+
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [])
+
+  if (currentRoute.startsWith('/share/')) {
+    return <SharePage />
+  }
+
+  return <MainApp />
+}
+
+function MainApp() {
   const [mode, setMode] = useKV<GenerationMode>('eve-music-mode', 'suno')
   const [genres, setGenres] = useKV<string[]>('eve-music-genres', [])
   const [description, setDescription] = useKV<string>('eve-music-description', '')

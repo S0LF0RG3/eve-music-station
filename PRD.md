@@ -97,6 +97,13 @@ A dual-mode agentic music generation application for creating Suno prompts and g
 - **Progression**: Click → LLM analyzes genres + description → Slider values animate to recommended positions → User can fine-tune from there → Explanation of why these values
 - **Success criteria**: Smooth animations, sensible recommendations, user maintains control, optional feature
 
+### Shareable Links & Embedded Player (New)
+- **Functionality**: Generate shareable links for individual tracks with dedicated player pages and embeddable iframe code
+- **Purpose**: Allow users to share their generated music with others and embed tracks on external websites
+- **Trigger**: Click share button on any track in the library
+- **Progression**: Click share → Modal opens with direct link and embed code tabs → Copy link or embed code → Recipients access dedicated player page → Embedded version shows compact player → Full version shows complete track details and parameters
+- **Success criteria**: Unique URLs for each track, embedded player loads correctly in iframes, copy-to-clipboard works, native share API integration on supported devices, player controls work independently, tracks persist in library for sharing
+
 ## Edge Case Handling
 
 - **No genres selected**: Gentle prompt to select at least one genre, disable generate button with tooltip

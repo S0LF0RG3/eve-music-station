@@ -3,7 +3,7 @@ import { Card } from './ui/card'
 import { Button } from './ui/button'
 import { ScrollArea } from './ui/scroll-area'
 import { MusicLibrary, LibraryTrack } from '@/lib/musicLibrary'
-import { Play, DownloadSimple, Trash, MusicNotes, Calendar, Clock, Sliders as SlidersIcon } from '@phosphor-icons/react'
+import { Play, DownloadSimple, Trash, MusicNotes, Calendar, Clock, Sliders as SlidersIcon, Share } from '@phosphor-icons/react'
 import { Badge } from './ui/badge'
 import { toast } from 'sonner'
 import {
@@ -13,6 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from './ui/dialog'
+import { ShareModal } from './ShareModal'
 
 interface MusicLibraryDisplayProps {
   onTrackAdded?: () => void
@@ -23,6 +24,7 @@ export function MusicLibraryDisplay({ onTrackAdded }: MusicLibraryDisplayProps) 
   const [isLoading, setIsLoading] = useState(true)
   const [selectedTrack, setSelectedTrack] = useState<LibraryTrack | null>(null)
   const [playingTrackId, setPlayingTrackId] = useState<string | null>(null)
+  const [shareTrack, setShareTrack] = useState<LibraryTrack | null>(null)
 
   useEffect(() => {
     loadTracks()
@@ -198,6 +200,17 @@ export function MusicLibraryDisplay({ onTrackAdded }: MusicLibraryDisplayProps) 
                         >
                           <DownloadSimple className="h-4 w-4" weight="bold" />
                         </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setShareTrack(track)
+                          }}
+                          className="gap-2"
+                        >
+                          <Share className="h-4 w-4" weight="bold" />
+                        </Button>
                       </>
                     )}
                     <Button
@@ -317,12 +330,27 @@ export function MusicLibraryDisplay({ onTrackAdded }: MusicLibraryDisplayProps) 
                   >
                     <DownloadSimple className="h-5 w-5" weight="bold" />
                   </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShareTrack(selectedTrack)
+                      setSelectedTrack(null)
+                    }}
+                  >
+                    <Share className="h-5 w-5" weight="bold" />
+                  </Button>
                 </div>
               )}
             </div>
           </DialogContent>
         </Dialog>
       )}
+
+      <ShareModal
+        track={shareTrack}
+        open={!!shareTrack}
+        onOpenChange={(open) => !open && setShareTrack(null)}
+      />
     </>
   )
 }

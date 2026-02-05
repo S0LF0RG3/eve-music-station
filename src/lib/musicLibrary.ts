@@ -70,4 +70,13 @@ export class MusicLibrary {
     const secs = Math.floor(seconds % 60)
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
+
+  static getShareUrl(trackId: string): string {
+    return `${window.location.origin}/share/${trackId}`
+  }
+
+  static getEmbedCode(trackId: string, width: string = '100%', height: string = '400'): string {
+    const shareUrl = this.getShareUrl(trackId)
+    return `<iframe src="${shareUrl}?embedded=true" width="${width}" height="${height}" frameborder="0" allowfullscreen></iframe>`
+  }
 }
