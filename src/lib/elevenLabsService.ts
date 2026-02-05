@@ -38,7 +38,7 @@ export class ElevenLabsService {
         requestBody.lyrics = options.lyrics.trim()
       }
 
-      const response = await fetch('https://api.elevenlabs.io/v1/music-generation/generate', {
+      const response = await fetch('https://api.elevenlabs.io/v1/music', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
