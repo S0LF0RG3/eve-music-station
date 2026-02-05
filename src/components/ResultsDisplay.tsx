@@ -1,11 +1,12 @@
 import { GenerationResult } from '@/lib/types'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Copy, Check, DownloadSimple, Play, Pause } from '@phosphor-icons/react'
+import { Copy, Check, DownloadSimple, Play, Pause, SpeakerHigh, SpeakerLow, SpeakerSlash } from '@phosphor-icons/react'
 import { useState, useRef, useEffect } from 'react'
 import { toast } from 'sonner'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { downloadAudio } from '@/lib/elevenLabsService'
+import { Slider } from '@/components/ui/slider'
 
 interface ResultsDisplayProps {
   result: GenerationResult
@@ -17,7 +18,16 @@ export function ResultsDisplay({ result }: ResultsDisplayProps) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
+  const [volume, setVolume] = useState(0.7)
+  const [isMuted, setIsMuted] = useState(false)
+  const [previousVolume, setPreviousVolume] = useState(0.7)
   const audioRef = useRef<HTMLAudioElement | null>(null)
+
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = isMuted ? 0 : volume
+    }
+  }, [volume, isMuted])
 
   useEffect(() => {
     return () => {
@@ -54,6 +64,39 @@ export function ResultsDisplay({ result }: ResultsDisplayProps) {
     }
     setIsPlaying(!isPlaying)
   }
+
+  const handleSeek = (value: number[]) => {
+    if (!audioRef.current || duration === 0) return
+    const newTime = (value[0] / 100) * duration
+    audioRef.current.currentTime = newTime
+    setCurrentTime(newTime)
+  }
+
+  const handleVolumeChange = (value: number[]) => {
+    const newVolume = value[0] / 100
+    setVolume(newVolume)
+    if (newVolume > 0 && isMuted) {
+      setIsMuted(false)
+    }
+  }
+
+  const handleToggleMute = () => {
+    if (isMuted) {
+      setIsMuted(false)
+      setVolume(previousVolume)
+    } else {
+      setPreviousVolume(volume)
+      setIsMuted(true)
+    }
+  }
+
+  const getVolumeIcon = () => {
+    if (isMuted || volume === 0) return SpeakerSlash
+    if (volume < 0.5) return SpeakerLow
+    return SpeakerHigh
+  }
+
+  const VolumeIcon = getVolumeIcon()
 
   const handleDownload = () => {
     if (result.metadata?.audioBlob) {
@@ -144,6 +187,32 @@ export function ResultsDisplay({ result }: ResultsDisplayProps) {
           />
 
           <div className="space-y-4">
+            <div className="relative w-full group">
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={duration > 0 ? (currentTime / duration) * 100 : 0}
+                onChange={(e) => handleSeek([parseFloat(e.target.value)])}
+                className="w-full h-2 bg-muted rounded-full appearance-none cursor-pointer 
+                  [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 
+                  [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent 
+                  [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-lg
+                  [&::-webkit-slider-thumb]:transition-all [&::-webkit-slider-thumb]:hover:scale-110
+                  [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full 
+                  [&::-moz-range-thumb]:bg-accent [&::-moz-range-thumb]:cursor-pointer 
+                  [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:shadow-lg
+                  [&::-moz-range-thumb]:transition-all [&::-moz-range-thumb]:hover:scale-110"
+                style={{
+                  background: `linear-gradient(to right, oklch(0.75 0.12 85) 0%, oklch(0.75 0.12 85) ${duration > 0 ? (currentTime / duration) * 100 : 0}%, oklch(0.25 0.08 260) ${duration > 0 ? (currentTime / duration) * 100 : 0}%, oklch(0.25 0.08 260) 100%)`
+                }}
+              />
+              <div className="flex justify-between mt-2">
+                <span className="font-mono text-xs text-muted-foreground">{formatTime(currentTime)}</span>
+                <span className="font-mono text-xs text-muted-foreground">{formatTime(duration)}</span>
+              </div>
+            </div>
+
             <div className="flex items-center gap-4">
               <Button
                 size="lg"
@@ -173,16 +242,37 @@ export function ResultsDisplay({ result }: ResultsDisplayProps) {
                 Download
               </Button>
 
-              <div className="flex-1 text-right font-mono text-sm text-muted-foreground">
-                {formatTime(currentTime)} / {formatTime(duration)}
+              <div className="flex-1 flex items-center gap-3 justify-end">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={handleToggleMute}
+                  className="p-2 h-9 w-9"
+                >
+                  <VolumeIcon className="h-5 w-5" weight="fill" />
+                </Button>
+                <div className="w-24">
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={isMuted ? 0 : volume * 100}
+                    onChange={(e) => handleVolumeChange([parseFloat(e.target.value)])}
+                    className="w-full h-1.5 bg-muted rounded-full appearance-none cursor-pointer
+                      [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 
+                      [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent 
+                      [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:transition-transform
+                      [&::-webkit-slider-thumb]:hover:scale-125
+                      [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:rounded-full 
+                      [&::-moz-range-thumb]:bg-accent [&::-moz-range-thumb]:cursor-pointer 
+                      [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:transition-transform
+                      [&::-moz-range-thumb]:hover:scale-125"
+                    style={{
+                      background: `linear-gradient(to right, oklch(0.75 0.12 85) 0%, oklch(0.75 0.12 85) ${isMuted ? 0 : volume * 100}%, oklch(0.25 0.08 260) ${isMuted ? 0 : volume * 100}%, oklch(0.25 0.08 260) 100%)`
+                    }}
+                  />
+                </div>
               </div>
-            </div>
-
-            <div className="relative w-full h-2 bg-muted rounded-full overflow-hidden">
-              <div
-                className="absolute top-0 left-0 h-full bg-accent transition-all duration-100"
-                style={{ width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%` }}
-              />
             </div>
           </div>
         </Card>
