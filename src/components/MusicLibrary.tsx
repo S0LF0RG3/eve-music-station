@@ -199,17 +199,6 @@ export function MusicLibraryDisplay({ onTrackAdded }: MusicLibraryDisplayProps) 
                               if (blob && blob instanceof Blob && blob.size > 0) {
                                 downloadAudio(blob, `${track.title}.mp3`)
                                 toast.success('Download started!')
-                              } else if (track.result.audioUrl) {
-                                const res = await fetch(track.result.audioUrl)
-                                if (!res.ok) {
-                                  throw new Error('Failed to fetch audio from URL')
-                                }
-                                const fetchedBlob = await res.blob()
-                                if (!fetchedBlob || fetchedBlob.size === 0) {
-                                  throw new Error('Downloaded audio is empty or invalid')
-                                }
-                                downloadAudio(fetchedBlob, `${track.title}.mp3`)
-                                toast.success('Download started!')
                               } else {
                                 throw new Error('No audio data available for this track')
                               }
@@ -348,17 +337,6 @@ export function MusicLibraryDisplay({ onTrackAdded }: MusicLibraryDisplayProps) 
                         
                         if (blob && blob instanceof Blob && blob.size > 0) {
                           downloadAudio(blob, `${selectedTrack.title}.mp3`)
-                          toast.success('Download started!')
-                        } else if (selectedTrack.result.audioUrl) {
-                          const res = await fetch(selectedTrack.result.audioUrl)
-                          if (!res.ok) {
-                            throw new Error('Failed to fetch audio from URL')
-                          }
-                          const fetchedBlob = await res.blob()
-                          if (!fetchedBlob || fetchedBlob.size === 0) {
-                            throw new Error('Downloaded audio is empty or invalid')
-                          }
-                          downloadAudio(fetchedBlob, `${selectedTrack.title}.mp3`)
                           toast.success('Download started!')
                         } else {
                           throw new Error('No audio data available for this track')
