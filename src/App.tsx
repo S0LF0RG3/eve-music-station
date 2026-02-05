@@ -343,7 +343,8 @@ function MainApp() {
                 ) : (
                   <>
                     <strong>ElevenLabs Mode:</strong> Generates complete music tracks using ElevenLabs Music Generation API.
-                    Requires valid API key. Supports 3s-300s (5 minutes) duration. Supports instrumental and vocal tracks with lyrics.
+                    Requires valid API key. Supports 3s-300s (5 minutes) duration. 
+                    Vocals are generated automatically when vocal types are selected - the API handles vocal style through natural language prompts.
                     Sliders functionally control the generation parameters.
                   </>
                 )}

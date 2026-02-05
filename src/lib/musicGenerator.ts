@@ -56,12 +56,15 @@ export class MusicGenerator {
         ? `\n- Vocal Style: ${this.config.vocalStyle} delivery`
         : ''
 
+      const lyricsContext = this.config.voiceType !== 'instrumental'
+        ? '\n- Include vocals with lyrics'
+        : '\n- Instrumental only, no vocals'
+
       const promptForLLM = createPrompt`You are Eve, an AI music generation agent. Based on this music configuration, generate a detailed and evocative music generation prompt for the ElevenLabs Music Generation API.
 
 Configuration:
 - Genres: ${this.config.genres.join(', ')}
-- Description: ${this.config.description}
-- Voice Type: ${this.config.voiceType}${vocalStyleContext}
+- Description: ${this.config.description}${lyricsContext}${vocalStyleContext}
 - Weirdness: ${this.config.weirdness}/100 (experimental nature)
 - Style: ${this.config.style}/100 (genre adherence)
 - Audio: ${this.config.audio}/100 (production quality)
@@ -79,23 +82,18 @@ CRITICAL REQUIREMENTS:
 ${this.config.vocalStyle && this.config.vocalStyle !== 'none' ? `6. Emphasize ${this.config.vocalStyle} vocal delivery style` : ''}
 7. Describe it as a complete music track with all instruments, structure, and production elements
 8. Be detailed and evocative - the API understands natural language and musical terminology
+9. If vocals are requested, describe the vocal style and delivery in the prompt
 
 Return ONLY the music generation prompt text, nothing else.`
 
       let enhancedPrompt = await callLLM(promptForLLM, 'gpt-4o-mini')
       enhancedPrompt = enhancedPrompt.trim()
 
-      let lyrics: string | undefined = undefined
-      if (this.config.voiceType !== 'instrumental') {
-        lyrics = await this.generateElevenLabsLyrics()
-      }
-
       if (!apiKey) {
         return {
           success: true,
           mode: 'elevenlabs',
           generationPrompt: enhancedPrompt,
-          lyrics,
           durationMs: this.config.durationSeconds * 1000,
           metadata: {
             genres: this.config.genres,
@@ -112,11 +110,11 @@ Return ONLY the music generation prompt text, nothing else.`
       const { ElevenLabsService } = await import('./elevenLabsService')
       const elevenLabs = new ElevenLabsService(apiKey)
 
+      const musicLengthMs = Math.min(Math.max(this.config.durationSeconds * 1000, 3000), 300000)
+
       const musicResult = await elevenLabs.generateMusic({
-        text: enhancedPrompt,
-        duration_seconds: Math.min(Math.max(this.config.durationSeconds, 3), 300),
-        lyrics: lyrics,
-        genres: this.config.genres,
+        prompt: enhancedPrompt,
+        musicLengthMs,
       })
 
       if (!musicResult.success || !musicResult.audioUrl) {
@@ -131,9 +129,8 @@ Return ONLY the music generation prompt text, nothing else.`
         success: true,
         mode: 'elevenlabs',
         generationPrompt: enhancedPrompt,
-        lyrics,
         audioUrl: musicResult.audioUrl,
-        durationMs: this.config.durationSeconds * 1000,
+        durationMs: musicLengthMs,
         metadata: {
           genres: this.config.genres,
           weirdness: this.config.weirdness,
@@ -143,6 +140,7 @@ Return ONLY the music generation prompt text, nothing else.`
           voiceType: this.config.voiceType,
           vocalStyle: this.config.vocalStyle,
           audioBlob: musicResult.audioBlob,
+          compositionPlan: musicResult.compositionPlan,
         },
       }
     } catch (error) {
@@ -204,40 +202,6 @@ Return ONLY the music generation prompt text, nothing else.`
     if (duration < 30) return 'Brief structure: intro, main section, outro'
     if (duration < 90) return 'Structure: intro, build, drop, breakdown, finale'
     return 'Extended structure: intro, verse, build, drop, breakdown, second drop, extended outro'
-  }
-
-  private async generateElevenLabsLyrics(): Promise<string> {
-    if (this.config.customLyrics && this.config.customLyrics.trim()) {
-      return this.config.customLyrics.trim()
-    }
-
-    const themeContext = this.config.lyricsTheme 
-      ? `Theme/concept: ${this.config.lyricsTheme}\n` 
-      : ''
-
-    const vocalStyleContext = this.config.vocalStyle && this.config.vocalStyle !== 'none'
-      ? `Vocal Style: ${this.config.vocalStyle} - write lyrics that complement this vocal delivery style\n`
-      : ''
-
-    const promptForLLM = createPrompt`You are Eve, an AI music generation agent. Generate lyrics for ElevenLabs Music Generation API for a ${this.config.genres.join(', ')} track.
-
-Description: "${this.config.description}"
-${themeContext}${vocalStyleContext}Voice Type: ${this.config.voiceType}
-Duration: ${this.config.durationSeconds} seconds
-
-REQUIREMENTS:
-1. Write complete, natural lyrics that flow with the music
-2. NO meta-tags or special formatting like [Verse], [Chorus], etc. - just plain lyrics
-3. Match the mood and energy described
-4. For ${this.config.voiceType} voice${this.config.vocalStyle && this.config.vocalStyle !== 'none' ? ` with ${this.config.vocalStyle} delivery` : ''}
-5. ${this.getDurationGuidance()}
-6. The API understands natural language, so be expressive and detailed
-7. Include line breaks between verses/sections naturally
-
-Return ONLY the plain lyrics text with natural line breaks, nothing else.`
-
-    const lyrics = await callLLM(promptForLLM, 'gpt-4o-mini')
-    return lyrics.trim()
   }
 
   private async generateLyrics(): Promise<string> {
