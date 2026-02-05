@@ -24,18 +24,23 @@ export class ElevenLabsService {
     try {
       const durationSeconds = Math.min(Math.max(options.duration_seconds || 60, 3), 300)
 
+      let promptText = options.text
+      if (promptText.length > 450) {
+        promptText = promptText.substring(0, 447) + '...'
+      }
+
       const requestBody: any = {
-        prompt: options.text,
-        duration: durationSeconds,
+        text: promptText,
+        duration_seconds: durationSeconds,
       }
 
       if (options.lyrics && options.lyrics.trim()) {
-        requestBody.lyrics = options.lyrics
+        requestBody.text = options.lyrics.trim()
       }
 
       console.log('ElevenLabs Music Generation API Request:', JSON.stringify(requestBody, null, 2))
 
-      const response = await fetch('https://api.elevenlabs.io/v1/sound-generation', {
+      const response = await fetch('https://api.elevenlabs.io/v1/music/generation', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
