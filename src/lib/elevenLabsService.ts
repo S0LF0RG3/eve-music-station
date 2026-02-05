@@ -24,18 +24,25 @@ export class ElevenLabsService {
       const durationSeconds = Math.min(Math.max(options.duration_seconds || 60, 3), 300)
 
       const requestBody: {
-        text: string
+        prompt?: string
+        composition_plan?: {
+          prompt: string
+          lyrics?: string
+        }
         duration: number
-        prompt_influence: number
-        lyrics?: string
+        prompt_influence?: number
       } = {
-        text: options.text,
         duration: durationSeconds,
-        prompt_influence: options.prompt_influence || 0.5,
       }
 
       if (options.lyrics && options.lyrics.trim()) {
-        requestBody.lyrics = options.lyrics.trim()
+        requestBody.composition_plan = {
+          prompt: options.text,
+          lyrics: options.lyrics.trim(),
+        }
+      } else {
+        requestBody.prompt = options.text
+        requestBody.prompt_influence = options.prompt_influence || 0.5
       }
 
       const response = await fetch('https://api.elevenlabs.io/v1/music', {
