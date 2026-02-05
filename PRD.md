@@ -47,7 +47,18 @@ A dual-mode agentic music generation application for creating Suno prompts and g
 - **Success criteria**: Intuitive layout, enhance improves lyrics quality, randomize creates unique creative output, voice selection clear, custom lyrics override auto-generation
 
 ### Music Generation
-- **Functionality**: Primary action that orchestrates the entire generation process - creates Suno exports or actual playable music via ElevenLabs API
+- **Functionality**: Primary action that orchestrates the entire generation process - creates Suno exports or actual playable music via ElevenLabs API, automatically saves to library
+- **Purpose**: Transforms all user inputs and algorithmic calculations into usable music output with persistent storage
+- **Trigger**: Click "Generate" button (disabled until at least 1 genre selected)
+- **Progression**: Click Generate → Validate inputs → Call MusicGenerator → Process algorithms → (Suno: generate lyrics + style prompt) OR (ElevenLabs: create enhanced prompt → call ElevenLabs API → return audio blob) → Save to library → Display results → Enable playback/download/copy actions
+- **Success criteria**: Clear loading states, handles errors gracefully, displays appropriate output format per mode, integrates all slider/genre/description inputs, saves successfully to library, provides library link
+
+### Music Library
+- **Functionality**: Persistent storage and display of all generated tracks with playback, download, and management capabilities
+- **Purpose**: Preserve creative work, enable replay and sharing, provide history of generations
+- **Trigger**: Auto-saves on successful generation, displays in library section below generator
+- **Progression**: Generate track → Auto-save to library → Library refreshes → Browse tracks → Click track for details → Play/download/delete actions
+- **Success criteria**: Tracks persist between sessions, displays all metadata, audio playback works, download function works, deletion works, library browses smoothly
 - **Purpose**: Transforms all inputs into either Suno export files or actual downloadable music with audio player
 - **Trigger**: Click "Generate Suno Export" or "Generate Music" button
 - **Progression**: Click generate → Validate API key (ElevenLabs) → Loading state with algorithm visualization → LLM processes inputs → (If randomize enabled) Creative variations applied → Mathematical formulas calculated → (ElevenLabs) API call to generate audio → Output generated (Suno: lyrics/prompt, ElevenLabs: audio file) → Results displayed with copy/play/download options

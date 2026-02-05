@@ -1,5 +1,6 @@
 import { MusicConfig, GenerationResult } from './types'
 import { MusicGenerator } from './musicGenerator'
+import { MusicLibrary, LibraryTrack } from './musicLibrary'
 
 export interface ApiGenerateRequest {
   mode: 'suno' | 'elevenlabs'
@@ -24,6 +25,13 @@ export interface ApiGenerateResponse {
   generationPrompt?: string
   metadata?: Record<string, any>
   error?: string
+  trackId?: string
+}
+
+export interface ApiLibraryResponse {
+  success: boolean
+  tracks: LibraryTrack[]
+  count: number
 }
 
 export async function handleMusicGenerationRequest(
@@ -57,6 +65,8 @@ export async function handleMusicGenerationRequest(
       }
     }
 
+    const track = await MusicLibrary.add(config, result)
+
     return {
       success: true,
       mode: result.mode,
@@ -65,12 +75,30 @@ export async function handleMusicGenerationRequest(
       stylePrompt: result.stylePrompt,
       generationPrompt: result.generationPrompt,
       metadata: result.metadata,
+      trackId: track.id,
     }
   } catch (error) {
     return {
       success: false,
       mode: request.mode,
       error: error instanceof Error ? error.message : 'Unknown error',
+    }
+  }
+}
+
+export async function handleLibraryRequest(): Promise<ApiLibraryResponse> {
+  try {
+    const tracks = await MusicLibrary.getAll()
+    return {
+      success: true,
+      tracks,
+      count: tracks.length,
+    }
+  } catch (error) {
+    return {
+      success: false,
+      tracks: [],
+      count: 0,
     }
   }
 }
@@ -82,5 +110,6 @@ export function setupApiRoutes() {
 
   (window as any).__EVE_MUSIC_API__ = {
     generate: handleMusicGenerationRequest,
+    library: handleLibraryRequest,
   }
 }

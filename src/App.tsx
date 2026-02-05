@@ -3,6 +3,7 @@ import { useKV } from '@github/spark/hooks'
 import { MusicConfig, GenerationMode, VoiceType, GenerationResult, AVAILABLE_GENRES } from './lib/types'
 import { MusicGenerator } from './lib/musicGenerator'
 import { AlgorithmicResonance } from './lib/algorithms'
+import { MusicLibrary } from './lib/musicLibrary'
 import { Button } from './components/ui/button'
 import { Tabs, TabsList, TabsTrigger } from './components/ui/tabs'
 import { Card } from './components/ui/card'
@@ -14,6 +15,7 @@ import { CosmicSlider } from './components/CosmicSlider'
 import { AlgorithmDisplay } from './components/AlgorithmDisplay'
 import { ResultsDisplay } from './components/ResultsDisplay'
 import { VoiceSelector } from './components/VoiceSelector'
+import { MusicLibraryDisplay } from './components/MusicLibrary'
 import { toast } from 'sonner'
 import { Toaster } from './components/ui/sonner'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './components/ui/dialog'
@@ -49,6 +51,7 @@ function App() {
   const [showApiKey, setShowApiKey] = useState(false)
   const [isValidatingKey, setIsValidatingKey] = useState(false)
   const [keyValidation, setKeyValidation] = useState<'valid' | 'invalid' | null>(null)
+  const [libraryRefresh, setLibraryRefresh] = useState(0)
 
   const config: MusicConfig = {
     mode: mode ?? 'suno',
@@ -136,10 +139,13 @@ function App() {
       setResult(generationResult)
 
       if (generationResult.success) {
+        await MusicLibrary.add(config, generationResult)
+        setLibraryRefresh(prev => prev + 1)
+
         if (config.mode === 'elevenlabs' && generationResult.audioUrl) {
-          toast.success('Music generated successfully! You can now play or download it.')
+          toast.success('Music generated successfully! Saved to library.')
         } else {
-          toast.success(`${config.mode === 'suno' ? 'Suno export' : 'Music prompt'} generated successfully!`)
+          toast.success(`${config.mode === 'suno' ? 'Suno export' : 'Music prompt'} generated successfully! Saved to library.`)
         }
       } else {
         toast.error(generationResult.error || 'Generation failed')
@@ -595,6 +601,10 @@ function App() {
           </div>
 
           {result && <ResultsDisplay result={result} />}
+
+          <div id="library" className="scroll-mt-8">
+            <MusicLibraryDisplay key={libraryRefresh} />
+          </div>
         </div>
       </div>
 
