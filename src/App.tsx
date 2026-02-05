@@ -7,7 +7,8 @@ import { Button } from './components/ui/button'
 import { Tabs, TabsList, TabsTrigger } from './components/ui/tabs'
 import { Card } from './components/ui/card'
 import { Textarea } from './components/ui/textarea'
-import { MusicNotes, Lightning, ArrowsClockwise, Sliders as SlidersIcon, Sparkle, Shuffle } from '@phosphor-icons/react'
+import { Input } from './components/ui/input'
+import { MusicNotes, Lightning, ArrowsClockwise, Sliders as SlidersIcon, Sparkle, Shuffle, Key, Eye, EyeSlash, CheckCircle, Warning } from '@phosphor-icons/react'
 import { GenreSelector } from './components/GenreSelector'
 import { CosmicSlider } from './components/CosmicSlider'
 import { AlgorithmDisplay } from './components/AlgorithmDisplay'
@@ -43,6 +44,10 @@ function App() {
   const [isEnhancingLyrics, setIsEnhancingLyrics] = useState(false)
   const [randomizeStyle, setRandomizeStyle] = useState(false)
   const [randomizeLyrics, setRandomizeLyrics] = useState(false)
+  const [elevenLabsApiKey, setElevenLabsApiKey] = useKV<string>('elevenlabs-api-key', '')
+  const [showApiKey, setShowApiKey] = useState(false)
+  const [isValidatingKey, setIsValidatingKey] = useState(false)
+  const [keyValidation, setKeyValidation] = useState<'valid' | 'invalid' | null>(null)
 
   const config: MusicConfig = {
     mode: mode ?? 'suno',
@@ -66,9 +71,46 @@ function App() {
     }
   }, [genres, weirdness])
 
+  const validateApiKey = async (key: string) => {
+    if (!key || key.length < 20) {
+      setKeyValidation('invalid')
+      return false
+    }
+
+    setIsValidatingKey(true)
+    try {
+      const response = await fetch('https://api.elevenlabs.io/v1/user', {
+        headers: {
+          'xi-api-key': key,
+        },
+      })
+
+      if (response.ok) {
+        setKeyValidation('valid')
+        toast.success('API key validated successfully!')
+        return true
+      } else {
+        setKeyValidation('invalid')
+        toast.error('Invalid API key')
+        return false
+      }
+    } catch (error) {
+      setKeyValidation('invalid')
+      toast.error('Failed to validate API key')
+      return false
+    } finally {
+      setIsValidatingKey(false)
+    }
+  }
+
   const handleGenerate = async () => {
     if ((genres ?? []).length === 0) {
       toast.error('Please select at least one genre')
+      return
+    }
+
+    if (mode === 'elevenlabs' && !(elevenLabsApiKey ?? '').trim()) {
+      toast.error('Please enter your ElevenLabs API key')
       return
     }
 
@@ -244,6 +286,59 @@ function App() {
                 )}
               </p>
             </div>
+
+            {mode === 'elevenlabs' && (
+              <div className="mt-6 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Key className="h-5 w-5 text-accent" weight="bold" />
+                  <h3 className="text-sm font-medium uppercase tracking-wide">ElevenLabs API Key</h3>
+                  {keyValidation === 'valid' && <CheckCircle className="h-5 w-5 text-green-500" weight="fill" />}
+                  {keyValidation === 'invalid' && <Warning className="h-5 w-5 text-destructive" weight="fill" />}
+                </div>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Input
+                      id="elevenlabs-api-key"
+                      type={showApiKey ? 'text' : 'password'}
+                      value={elevenLabsApiKey ?? ''}
+                      onChange={(e) => {
+                        setElevenLabsApiKey(e.target.value)
+                        setKeyValidation(null)
+                      }}
+                      placeholder="Enter your ElevenLabs API key..."
+                      className="bg-background/50 font-mono text-sm pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowApiKey(!showApiKey)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {showApiKey ? <EyeSlash className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={() => validateApiKey(elevenLabsApiKey ?? '')}
+                    disabled={isValidatingKey || !(elevenLabsApiKey ?? '').trim()}
+                    className="gap-2"
+                  >
+                    {isValidatingKey ? 'Validating...' : 'Validate'}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Get your API key from{' '}
+                  <a
+                    href="https://elevenlabs.io/app/settings/api-keys"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-accent hover:underline"
+                  >
+                    ElevenLabs Settings
+                  </a>
+                  . Your key is stored securely in your browser.
+                </p>
+              </div>
+            )}
           </Card>
 
           <Card className="p-6 backdrop-cosmic border-accent/20">
