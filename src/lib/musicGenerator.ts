@@ -11,11 +11,11 @@ export class MusicGenerator {
     this.algorithms = new AlgorithmicResonance(config)
   }
 
-  async generate(options?: { randomizeStyle?: boolean; randomizeLyrics?: boolean }): Promise<GenerationResult> {
+  async generate(options?: { randomizeStyle?: boolean; randomizeLyrics?: boolean; elevenLabsApiKey?: string }): Promise<GenerationResult> {
     if (this.config.mode === 'suno') {
       return this.generateSunoExport(options)
     } else {
-      return this.generateElevenLabs()
+      return this.generateElevenLabs(options?.elevenLabsApiKey)
     }
   }
 
@@ -50,7 +50,7 @@ export class MusicGenerator {
     }
   }
 
-  private async generateElevenLabs(): Promise<GenerationResult> {
+  private async generateElevenLabs(apiKey?: string): Promise<GenerationResult> {
     try {
       const prompt = this.buildElevenLabsPrompt()
 
@@ -80,10 +80,47 @@ Return ONLY the music generation prompt text, nothing else.`
 
       const enhancedPrompt = await callLLM(promptForLLM, 'gpt-4o-mini')
 
+      if (!apiKey) {
+        return {
+          success: true,
+          mode: 'elevenlabs',
+          generationPrompt: enhancedPrompt.trim(),
+          durationMs: this.config.durationSeconds * 1000,
+          metadata: {
+            genres: this.config.genres,
+            weirdness: this.config.weirdness,
+            style: this.config.style,
+            audio: this.config.audio,
+            durationSeconds: this.config.durationSeconds,
+            voiceType: this.config.voiceType,
+          },
+        }
+      }
+
+      const { ElevenLabsService } = await import('./elevenLabsService')
+      const elevenLabs = new ElevenLabsService(apiKey)
+
+      const promptInfluence = this.config.style / 100
+
+      const musicResult = await elevenLabs.generateMusic({
+        text: enhancedPrompt.trim(),
+        duration_seconds: Math.min(this.config.durationSeconds, 22),
+        prompt_influence: promptInfluence,
+      })
+
+      if (!musicResult.success || !musicResult.audioUrl) {
+        return {
+          success: false,
+          mode: 'elevenlabs',
+          error: musicResult.error || 'Failed to generate music',
+        }
+      }
+
       return {
         success: true,
         mode: 'elevenlabs',
         generationPrompt: enhancedPrompt.trim(),
+        audioUrl: musicResult.audioUrl,
         durationMs: this.config.durationSeconds * 1000,
         metadata: {
           genres: this.config.genres,
@@ -92,6 +129,7 @@ Return ONLY the music generation prompt text, nothing else.`
           audio: this.config.audio,
           durationSeconds: this.config.durationSeconds,
           voiceType: this.config.voiceType,
+          audioBlob: musicResult.audioBlob,
         },
       }
     } catch (error) {

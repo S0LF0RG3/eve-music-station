@@ -125,12 +125,17 @@ function App() {
       const generator = new MusicGenerator(config)
       const generationResult = await generator.generate({ 
         randomizeStyle: randomizeStyle && mode === 'suno',
-        randomizeLyrics: randomizeLyrics && mode === 'suno'
+        randomizeLyrics: randomizeLyrics && mode === 'suno',
+        elevenLabsApiKey: mode === 'elevenlabs' ? (elevenLabsApiKey ?? '') : undefined
       })
       setResult(generationResult)
 
       if (generationResult.success) {
-        toast.success(`${config.mode === 'suno' ? 'Suno export' : 'Music'} generated successfully!`)
+        if (config.mode === 'elevenlabs' && generationResult.audioUrl) {
+          toast.success('Music generated successfully! You can now play or download it.')
+        } else {
+          toast.success(`${config.mode === 'suno' ? 'Suno export' : 'Music prompt'} generated successfully!`)
+        }
       } else {
         toast.error(generationResult.error || 'Generation failed')
       }
@@ -280,8 +285,8 @@ function App() {
                   </>
                 ) : (
                   <>
-                    <strong>ElevenLabs Mode:</strong> Generates enhanced prompts for music creation.
-                    Sliders functionally control the generation parameters.
+                    <strong>ElevenLabs Mode:</strong> Generates and downloads actual music using ElevenLabs Sound Generation API.
+                    Requires valid API key. Sliders functionally control the generation parameters.
                   </>
                 )}
               </p>
@@ -539,6 +544,12 @@ function App() {
                     : 'Extended format'
                 }`}
               />
+
+              {mode === 'elevenlabs' && (
+                <div className="p-3 rounded-lg bg-accent/10 border border-accent/30 text-xs text-foreground/90">
+                  <strong>ElevenLabs Limit:</strong> Sound Generation API is capped at 22 seconds. Duration will be limited during generation.
+                </div>
+              )}
             </div>
 
             {mode === 'suno' && (
@@ -574,7 +585,7 @@ function App() {
                 ? 'Generating...'
                 : mode === 'suno'
                 ? 'Generate Suno Export'
-                : 'Generate Music Prompt'}
+                : 'Generate Music'}
             </Button>
           </div>
 

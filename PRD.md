@@ -12,11 +12,11 @@ A dual-mode agentic music generation application for creating Suno prompts and g
 ## Essential Features
 
 ### Mode Selection
-- **Functionality**: Toggle between Suno Export (lyrics/prompt generation) and ElevenLabs Generate (actual music creation)
-- **Purpose**: Provides flexibility between budget-friendly prompt generation and premium instant music generation
+- **Functionality**: Toggle between Suno Export (lyrics/prompt generation) and ElevenLabs Generate (actual music creation and download)
+- **Purpose**: Provides flexibility between budget-friendly prompt generation and instant AI music generation with audio playback
 - **Trigger**: Mode selector at top of interface
-- **Progression**: Select mode → Interface adapts to show mode-specific controls → Generation parameters update contextually → Generate button behavior changes
-- **Success criteria**: Clear visual distinction between modes, appropriate controls shown/hidden, slider behavior adapts (informational vs functional)
+- **Progression**: Select mode → Interface adapts to show mode-specific controls → Generation parameters update contextually → ElevenLabs shows API key input → Generate button behavior changes (export vs. generate music)
+- **Success criteria**: Clear visual distinction between modes, appropriate controls shown/hidden, slider behavior adapts (informational vs functional), API key management for ElevenLabs
 
 ### Genre Selection
 - **Functionality**: Multi-select genre tags from curated list including Trap, Hip-Hop, EDM, Industrial, Glitchcore, etc.
@@ -47,18 +47,18 @@ A dual-mode agentic music generation application for creating Suno prompts and g
 - **Success criteria**: Intuitive layout, enhance improves lyrics quality, randomize creates unique creative output, voice selection clear, custom lyrics override auto-generation
 
 ### Music Generation
-- **Functionality**: Primary action that orchestrates the entire generation process with optional randomization
-- **Purpose**: Transforms all inputs into either Suno export files or actual music playback
+- **Functionality**: Primary action that orchestrates the entire generation process - creates Suno exports or actual playable music via ElevenLabs API
+- **Purpose**: Transforms all inputs into either Suno export files or actual downloadable music with audio player
 - **Trigger**: Click "Generate Suno Export" or "Generate Music" button
-- **Progression**: Click generate → Loading state with algorithm visualization → LLM processes inputs → (If randomize enabled) Creative variations applied → Mathematical formulas calculated → Output generated → Results displayed with copy/download options
-- **Success criteria**: Clear loading states, error handling, generated content properly formatted, 808s always included, golden ratio signature present, randomization creates unique outputs
+- **Progression**: Click generate → Validate API key (ElevenLabs) → Loading state with algorithm visualization → LLM processes inputs → (If randomize enabled) Creative variations applied → Mathematical formulas calculated → (ElevenLabs) API call to generate audio → Output generated (Suno: lyrics/prompt, ElevenLabs: audio file) → Results displayed with copy/play/download options
+- **Success criteria**: Clear loading states, error handling, generated content properly formatted, 808s always included, golden ratio signature present, randomization creates unique outputs, ElevenLabs generates actual playable audio with download functionality
 
 ### Results Display
-- **Functionality**: Shows generated lyrics, style prompt (Suno) or audio player with download (ElevenLabs)
-- **Purpose**: Delivers the final output in usable format
+- **Functionality**: Shows generated lyrics and style prompt (Suno) or audio player with playback controls and download (ElevenLabs)
+- **Purpose**: Delivers the final output in immediately usable format
 - **Trigger**: Successful generation completion
-- **Progression**: Generation completes → Results fade in → Suno: formatted lyrics + style prompt with copy buttons → ElevenLabs: audio player + download + prompt display → Metadata shown
-- **Success criteria**: Beautiful formatting, syntax highlighting for tags, one-click copy, audio player works reliably, download generates proper filename
+- **Progression**: Generation completes → Results fade in → Suno: formatted lyrics + style prompt with copy buttons → ElevenLabs: audio player with play/pause + waveform progress bar + download button + prompt display → Metadata shown
+- **Success criteria**: Beautiful formatting, syntax highlighting for tags, one-click copy, audio player works reliably with play/pause controls, progress tracking, download generates proper timestamped filename
 
 ### Algorithm Visualization
 - **Functionality**: Real-time display of active algorithms (Fibonacci, Golden Ratio, Perlin, etc.) and their parameters
@@ -74,7 +74,12 @@ A dual-mode agentic music generation application for creating Suno prompts and g
 - **Progression**: Click button → Modal/panel opens → LLM analyzes current config → Detailed description of expected output → Specific examples provided → Close to adjust
 - **Success criteria**: Quick response, helpful descriptions, mode-aware analysis
 
-### Recommended Settings
+### ElevenLabs API Integration (New)
+- **Functionality**: Secure API key storage, validation, and actual music generation using ElevenLabs Sound Generation API
+- **Purpose**: Enables real music creation without leaving the app
+- **Trigger**: Enter API key in ElevenLabs mode, validate, then generate
+- **Progression**: Switch to ElevenLabs mode → Enter API key → Click validate → Success/error feedback → Generate music → API call with enhanced prompt → Audio returned → Player displays with download option
+- **Success criteria**: Secure key storage (browser-only), validation works, API calls succeed, audio plays correctly, proper error handling for API failures, 22-second duration limit enforced
 - **Functionality**: "Recommend levels" button that auto-adjusts sliders based on genres and description
 - **Purpose**: Helps beginners or speeds up workflow with intelligent defaults
 - **Trigger**: Click recommend button
@@ -91,6 +96,9 @@ A dual-mode agentic music generation application for creating Suno prompts and g
 - **API timeouts**: Show retry option, explain ElevenLabs takes 30-40s normally, abort option available
 - **Audio playback issues**: Fallback download link, format information, browser compatibility note
 - **Missing API capabilities**: Graceful degradation if spark.llm unavailable, show static examples
+- **Invalid API key**: Clear validation error, link to ElevenLabs settings page, secure storage of valid keys
+- **ElevenLabs API errors**: Specific error messages for quota limits, invalid prompts, network issues
+- **Audio download**: Generate timestamped filename, proper MP3 format, handle blob URLs properly
 
 ## Design Direction
 
@@ -186,6 +194,10 @@ Animations should feel like cosmic forces - smooth, physics-based, with occasion
 - ArrowsClockwise (phosphor) - Recommend/refresh
 - X (phosphor) - Close, deselect
 - Check (phosphor) - Success states
+- Key (phosphor) - API key management
+- Eye/EyeSlash (phosphor) - Show/hide API key
+- CheckCircle (phosphor) - Valid API key
+- Warning (phosphor) - Invalid API key
 
 **Spacing**:
 - Section gaps: 8 (32px)
