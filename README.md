@@ -3,13 +3,21 @@
 A dual-mode agentic music generation application that creates Suno prompts and generates music with algorithmic mathematical precision using the golden ratio (φ = 1.618033988749).
 
 ![Status](https://img.shields.io/badge/Status-Production%20Ready-brightgreen)
-![Version](https://img.shields.io/badge/Version-2.0-blue)
+![Version](https://img.shields.io/badge/Version-2.1-blue)
 
 ## ✨ Features
 
 ### 🎵 Dual-Mode Generation
 - **Suno Export Mode**: Generate lyrics and style prompts for Suno.com
+- **Suno Direct Mode**: Automatically create songs on Suno.com with Google OAuth (NEW!)
 - **ElevenLabs Mode**: Create actual music with AI-generated audio
+
+### 🔐 Suno.com Integration (NEW!)
+- **Google OAuth Login**: Secure authentication to Suno.com
+- **Browser Automation**: Automated song creation using Playwright
+- **Persona Management**: Access and apply your Suno personas
+- **Direct Creation**: Automatically fill lyrics, style, genres, and create songs
+- **Smart Controls**: Map app sliders to Suno's weirdness, style, and audio settings
 
 ### 🎼 Musical Control
 - **90+ Genres**: From Trap to Ambient, Industrial to Synthwave
@@ -28,6 +36,8 @@ A dual-mode agentic music generation application that creates Suno prompts and g
 
 ## 🚀 Quick Start
 
+### Frontend Only (Suno Export & ElevenLabs)
+
 Visit [Eve Music Station](https://eve-music-station--jeffgreen311.github.app/)
 
 1. Select 1-4 genres
@@ -35,6 +45,34 @@ Visit [Eve Music Station](https://eve-music-station--jeffgreen311.github.app/)
 3. Adjust parameters
 4. Choose mode and generate
 5. Browse library!
+
+### With Suno Direct Integration
+
+1. **Setup Backend** (required for Suno automation):
+   ```bash
+   cd server
+   npm install
+   npx playwright install chromium
+   cp .env.example .env
+   # Edit .env with your Google OAuth credentials
+   npm start
+   ```
+
+2. **Configure Frontend**:
+   ```bash
+   cp .env.example .env
+   # Verify VITE_BACKEND_URL=http://localhost:3001
+   npm run dev
+   ```
+
+3. **Use the App**:
+   - Click "Login with Google" in Suno mode
+   - Click "Connect to Suno" after authentication
+   - Enable "Auto-create on Suno.com"
+   - Select a persona (optional)
+   - Generate music - it will be created directly on Suno!
+
+See [server/README.md](./server/README.md) for detailed backend setup instructions.
 
 ## 📖 Documentation
 
@@ -44,7 +82,9 @@ Visit [Eve Music Station](https://eve-music-station--jeffgreen311.github.app/)
 
 ## 🛠️ Technical Stack
 
-React 19 + TypeScript | Tailwind CSS v4 | Shadcn/ui | Spark KV | GPT-4o | ElevenLabs API
+**Frontend**: React 19 + TypeScript | Tailwind CSS v4 | Shadcn/ui | Spark KV | GPT-4o | ElevenLabs API
+
+**Backend** (optional, for Suno integration): Node.js + Express | Passport.js | Playwright | Google OAuth 2.0
 
 ## 🎯 Key Parameters
 
