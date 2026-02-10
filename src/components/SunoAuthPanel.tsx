@@ -116,7 +116,7 @@ export function SunoAuthPanel({ onAuthChange }: SunoAuthPanelProps) {
               Start the server: <code className="text-xs bg-black/40 px-2 py-1 rounded">cd server && npm start</code>
             </p>
             <p className="text-xs text-gray-500">
-              See <a href="/server/README.md" target="_blank" className="text-accent hover:underline">server/README.md</a> for setup instructions
+              See <a href="https://github.com/S0LF0RG3/eve-music-station/blob/main/server/README.md" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">server/README.md</a> for setup instructions
             </p>
           </div>
         </div>
