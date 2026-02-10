@@ -8,13 +8,18 @@ const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
 // CSRF token management
 let csrfToken: string | null = null;
 
-async function getCsrfToken(): Promise<string> {
-  if (csrfToken) return csrfToken;
+async function getCsrfToken(forceRefresh = false): Promise<string> {
+  if (csrfToken && !forceRefresh) return csrfToken;
   
   try {
     const response = await fetch(`${BACKEND_URL}/auth/csrf-token`, {
       credentials: 'include'
     });
+    
+    if (!response.ok) {
+      throw new Error('Failed to get CSRF token');
+    }
+    
     const data = await response.json();
     csrfToken = data.csrfToken;
     return csrfToken;
@@ -22,6 +27,36 @@ async function getCsrfToken(): Promise<string> {
     console.error('Failed to get CSRF token:', error);
     throw new Error('Failed to get CSRF token');
   }
+}
+
+// Helper to handle CSRF token errors
+async function fetchWithCsrf(url: string, options: RequestInit = {}): Promise<Response> {
+  let token = await getCsrfToken();
+  
+  const headers = {
+    ...options.headers,
+    'CSRF-Token': token
+  };
+  
+  let response = await fetch(url, {
+    ...options,
+    credentials: 'include',
+    headers
+  });
+  
+  // If we get a 403, try refreshing the token once
+  if (response.status === 403) {
+    token = await getCsrfToken(true);
+    headers['CSRF-Token'] = token;
+    
+    response = await fetch(url, {
+      ...options,
+      credentials: 'include',
+      headers
+    });
+  }
+  
+  return response;
 }
 
 export interface SunoAuthStatus {
@@ -81,13 +116,8 @@ export class SunoAuthService {
    */
   static async logout(): Promise<void> {
     try {
-      const token = await getCsrfToken();
-      await fetch(`${BACKEND_URL}/auth/logout`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'CSRF-Token': token
-        }
+      await fetchWithCsrf(`${BACKEND_URL}/auth/logout`, {
+        method: 'POST'
       });
       csrfToken = null; // Clear cached token
     } catch (error) {
@@ -101,13 +131,8 @@ export class SunoAuthService {
    */
   static async loginToSuno(): Promise<SunoSessionStatus> {
     try {
-      const token = await getCsrfToken();
-      const response = await fetch(`${BACKEND_URL}/api/suno/login`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'CSRF-Token': token
-        }
+      const response = await fetchWithCsrf(`${BACKEND_URL}/api/suno/login`, {
+        method: 'POST'
       });
       
       if (!response.ok) {
@@ -127,14 +152,11 @@ export class SunoAuthService {
    */
   static async createSong(request: CreateSongRequest): Promise<{ success: boolean; message: string }> {
     try {
-      const token = await getCsrfToken();
-      const response = await fetch(`${BACKEND_URL}/api/suno/create-song`, {
+      const response = await fetchWithCsrf(`${BACKEND_URL}/api/suno/create-song`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'CSRF-Token': token
+          'Content-Type': 'application/json'
         },
-        credentials: 'include',
         body: JSON.stringify(request)
       });
       
@@ -177,13 +199,8 @@ export class SunoAuthService {
    */
   static async logoutFromSuno(): Promise<void> {
     try {
-      const token = await getCsrfToken();
-      await fetch(`${BACKEND_URL}/api/suno/logout`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'CSRF-Token': token
-        }
+      await fetchWithCsrf(`${BACKEND_URL}/api/suno/logout`, {
+        method: 'POST'
       });
       csrfToken = null; // Clear cached token
     } catch (error) {

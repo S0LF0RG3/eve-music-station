@@ -17,7 +17,7 @@
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "express-rate-limit": "^7.5.0",
-    "csurf": "^1.11.0",
+    "csrf": "^3.1.0",
     "cookie-parser": "^1.4.7"
   },
   "devDependencies": {

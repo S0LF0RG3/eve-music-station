@@ -102,14 +102,21 @@ export function SunoAuthPanel({ onAuthChange }: SunoAuthPanelProps) {
   };
 
   if (!backendAvailable) {
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
     return (
       <Card className="p-6 bg-[oklch(0.20_0.05_285)] border-[oklch(0.25_0.08_260)]">
         <div className="flex items-center gap-3 text-red-400">
           <Warning size={24} weight="fill" />
-          <div>
+          <div className="space-y-2">
             <p className="font-semibold">Backend Service Not Available</p>
             <p className="text-sm text-gray-400">
-              Please start the backend server: <code className="text-xs bg-black/40 px-2 py-1 rounded">cd server && npm start</code>
+              Cannot connect to backend at <code className="text-xs bg-black/40 px-1 py-0.5 rounded">{backendUrl}</code>
+            </p>
+            <p className="text-sm text-gray-400">
+              Start the server: <code className="text-xs bg-black/40 px-2 py-1 rounded">cd server && npm start</code>
+            </p>
+            <p className="text-xs text-gray-500">
+              See <a href="/server/README.md" target="_blank" className="text-accent hover:underline">server/README.md</a> for setup instructions
             </p>
           </div>
         </div>

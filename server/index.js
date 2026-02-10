@@ -7,12 +7,16 @@ import dotenv from 'dotenv';
 import { chromium } from 'playwright';
 import rateLimit from 'express-rate-limit';
 import cookieParser from 'cookie-parser';
-import csrf from 'csurf';
+import { Tokens } from 'csrf';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// CSRF token generator
+const tokens = new Tokens();
+const csrfSecret = tokens.secretSync();
 
 // Store active browser sessions for each user
 const userSessions = new Map();
@@ -51,8 +55,20 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-// CSRF protection for state-changing operations
-const csrfProtection = csrf({ cookie: true });
+// CSRF protection middleware
+const csrfProtection = (req, res, next) => {
+  // Skip CSRF check for GET requests and health endpoint
+  if (req.method === 'GET' || req.path === '/health') {
+    return next();
+  }
+  
+  const token = req.headers['csrf-token'];
+  if (!token || !tokens.verify(csrfSecret, token)) {
+    return res.status(403).json({ error: 'Invalid CSRF token' });
+  }
+  
+  next();
+};
 
 // Passport Configuration
 passport.use(new GoogleStrategy({
@@ -100,7 +116,7 @@ app.get('/auth/failure', (req, res) => {
   res.status(401).json({ error: 'Authentication failed' });
 });
 
-app.get('/auth/status', (req, res) => {
+app.get('/auth/status', apiLimiter, (req, res) => {
   if (req.isAuthenticated()) {
     res.json({
       authenticated: true,
@@ -115,8 +131,9 @@ app.get('/auth/status', (req, res) => {
 });
 
 // CSRF token endpoint
-app.get('/auth/csrf-token', csrfProtection, (req, res) => {
-  res.json({ csrfToken: req.csrfToken() });
+app.get('/auth/csrf-token', (req, res) => {
+  const token = tokens.create(csrfSecret);
+  res.json({ csrfToken: token });
 });
 
 app.post('/auth/logout', csrfProtection, (req, res) => {
@@ -207,6 +224,49 @@ app.post('/api/suno/create-song', apiLimiter, requireAuth, csrfProtection, async
       songTitle 
     } = req.body;
     
+    // Input validation
+    if (!songTitle || typeof songTitle !== 'string' || songTitle.length > 100) {
+      return res.status(400).json({ 
+        error: 'Invalid song title. Must be a string with max 100 characters.' 
+      });
+    }
+    
+    if (lyrics && typeof lyrics !== 'string') {
+      return res.status(400).json({ 
+        error: 'Invalid lyrics. Must be a string.' 
+      });
+    }
+    
+    if (stylePrompt && typeof stylePrompt !== 'string') {
+      return res.status(400).json({ 
+        error: 'Invalid style prompt. Must be a string.' 
+      });
+    }
+    
+    if (genres && (!Array.isArray(genres) || genres.some(g => typeof g !== 'string'))) {
+      return res.status(400).json({ 
+        error: 'Invalid genres. Must be an array of strings.' 
+      });
+    }
+    
+    if (weirdness !== undefined && (typeof weirdness !== 'number' || weirdness < 0 || weirdness > 100)) {
+      return res.status(400).json({ 
+        error: 'Invalid weirdness. Must be a number between 0-100.' 
+      });
+    }
+    
+    if (style !== undefined && (typeof style !== 'number' || style < 0 || style > 100)) {
+      return res.status(400).json({ 
+        error: 'Invalid style. Must be a number between 0-100.' 
+      });
+    }
+    
+    if (audioQuality !== undefined && (typeof audioQuality !== 'number' || audioQuality < 0 || audioQuality > 100)) {
+      return res.status(400).json({ 
+        error: 'Invalid audioQuality. Must be a number between 0-100.' 
+      });
+    }
+    
     // Check if user has an active Suno session
     if (!userSessions.has(userId)) {
       return res.status(400).json({ 
@@ -223,6 +283,8 @@ app.post('/api/suno/create-song', apiLimiter, requireAuth, csrfProtection, async
     }
     
     // Fill in song title
+    // Note: These selectors are specific to Suno's current UI (as of 2026)
+    // If Suno changes their interface, these selectors will need to be updated
     if (songTitle) {
       const titleInput = await page.locator('input[placeholder*="title"]').first();
       await titleInput.fill(songTitle);
