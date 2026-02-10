@@ -240,16 +240,23 @@ function MainApp() {
 
   const generateSongTitle = async (result: GenerationResult): Promise<string> => {
     try {
-      const generator = new MusicGenerator(config)
-      // Use LLM to generate a creative song title based on lyrics and style
-      const titlePrompt = `Generate a creative, catchy song title (max 60 characters) for a ${genres?.join(', ')} song with these lyrics:\n\n${result.lyrics?.substring(0, 200)}...\n\nStyle: ${result.stylePrompt}\n\nReturn only the song title, nothing else.`
+      const { callLLM } = await import('./lib/sparkUtils')
       
-      // You'll need to implement this method in MusicGenerator or use direct LLM call
-      // For now, return a simple title based on genres
-      return `${genres?.[0] || 'Music'} Creation ${Date.now().toString().slice(-6)}`
+      // Use LLM to generate a creative song title based on lyrics and style
+      const prompt = `Generate a creative, catchy song title (max 60 characters) for a ${genres?.join(', ')} song with these lyrics:
+
+${result.lyrics?.substring(0, 200)}...
+
+Style: ${result.stylePrompt}
+
+Return only the song title, nothing else.`
+      
+      const title = await callLLM(prompt, 'gpt-4o-mini')
+      return title.trim().replace(/^["']|["']$/g, '') // Remove quotes if present
     } catch (error) {
       console.error('Failed to generate song title:', error)
-      return `Untitled ${Date.now().toString().slice(-6)}`
+      // Fallback to simple title based on genres
+      return `${genres?.[0] || 'Music'} Creation ${Date.now().toString().slice(-6)}`
     }
   }
 

@@ -122,7 +122,7 @@ app.post('/api/suno/login', requireAuth, async (req, res) => {
 
     // Launch browser and navigate to Suno
     const browser = await chromium.launch({ 
-      headless: false // Set to true in production
+      headless: process.env.NODE_ENV === 'production'
     });
     const context = await browser.newContext();
     const page = await context.newPage();
