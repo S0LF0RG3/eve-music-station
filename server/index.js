@@ -5,6 +5,9 @@ import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import dotenv from 'dotenv';
 import { chromium } from 'playwright';
+import rateLimit from 'express-rate-limit';
+import cookieParser from 'cookie-parser';
+import csrf from 'csurf';
 
 dotenv.config();
 
@@ -14,23 +17,42 @@ const PORT = process.env.PORT || 3001;
 // Store active browser sessions for each user
 const userSessions = new Map();
 
+// Rate limiters
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // 5 requests per window
+  message: 'Too many authentication attempts, please try again later'
+});
+
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // 100 requests per window
+  message: 'Too many requests, please try again later'
+});
+
 // Middleware
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:5173',
   credentials: true
 }));
 app.use(express.json());
+app.use(cookieParser());
 app.use(session({
   secret: process.env.SESSION_SECRET || 'eve-music-station-secret',
   resave: false,
   saveUninitialized: false,
   cookie: {
     secure: process.env.NODE_ENV === 'production',
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    httpOnly: true,
+    sameSite: 'lax'
   }
 }));
 app.use(passport.initialize());
 app.use(passport.session());
+
+// CSRF protection for state-changing operations
+const csrfProtection = csrf({ cookie: true });
 
 // Passport Configuration
 passport.use(new GoogleStrategy({
@@ -58,12 +80,14 @@ passport.deserializeUser((user, done) => {
 
 // Authentication Routes
 app.get('/auth/google',
+  authLimiter,
   passport.authenticate('google', { 
     scope: ['profile', 'email'] 
   })
 );
 
 app.get('/auth/google/callback',
+  authLimiter,
   passport.authenticate('google', { failureRedirect: '/auth/failure' }),
   (req, res) => {
     // Redirect to frontend with success
@@ -90,7 +114,12 @@ app.get('/auth/status', (req, res) => {
   }
 });
 
-app.post('/auth/logout', (req, res) => {
+// CSRF token endpoint
+app.get('/auth/csrf-token', csrfProtection, (req, res) => {
+  res.json({ csrfToken: req.csrfToken() });
+});
+
+app.post('/auth/logout', csrfProtection, (req, res) => {
   req.logout((err) => {
     if (err) {
       return res.status(500).json({ error: 'Logout failed' });
@@ -108,7 +137,7 @@ const requireAuth = (req, res, next) => {
 };
 
 // Suno Automation Routes
-app.post('/api/suno/login', requireAuth, async (req, res) => {
+app.post('/api/suno/login', apiLimiter, requireAuth, csrfProtection, async (req, res) => {
   try {
     const userId = req.user.id;
     
@@ -164,7 +193,7 @@ app.post('/api/suno/login', requireAuth, async (req, res) => {
   }
 });
 
-app.post('/api/suno/create-song', requireAuth, async (req, res) => {
+app.post('/api/suno/create-song', apiLimiter, requireAuth, csrfProtection, async (req, res) => {
   try {
     const userId = req.user.id;
     const { 
@@ -262,7 +291,7 @@ app.post('/api/suno/create-song', requireAuth, async (req, res) => {
   }
 });
 
-app.get('/api/suno/personas', requireAuth, async (req, res) => {
+app.get('/api/suno/personas', apiLimiter, requireAuth, async (req, res) => {
   try {
     const userId = req.user.id;
     
@@ -297,7 +326,7 @@ app.get('/api/suno/personas', requireAuth, async (req, res) => {
   }
 });
 
-app.post('/api/suno/logout', requireAuth, async (req, res) => {
+app.post('/api/suno/logout', apiLimiter, requireAuth, csrfProtection, async (req, res) => {
   try {
     const userId = req.user.id;
     
