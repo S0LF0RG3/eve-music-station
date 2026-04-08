@@ -67,7 +67,7 @@ export class ElevenLabsService {
 
       console.log('ElevenLabs Music API Request:', JSON.stringify(requestBody, null, 2))
 
-      const response = await fetch('https://api.elevenlabs.io/v1/music/compose', {
+      const response = await fetch('https://api.elevenlabs.io/v1/music', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -129,7 +129,7 @@ export class ElevenLabsService {
 
   async createCompositionPlan(prompt: string, musicLengthMs: number): Promise<CompositionPlan> {
     try {
-      const response = await fetch('https://api.elevenlabs.io/v1/music/composition-plan', {
+      const response = await fetch('https://api.elevenlabs.io/v1/music/plan', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -199,7 +199,7 @@ export class ElevenLabsService {
         }
       }
 
-      const response = await fetch('https://api.elevenlabs.io/v1/music/compose/detailed', {
+      const response = await fetch('https://api.elevenlabs.io/v1/music/detailed', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
