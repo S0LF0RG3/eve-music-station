@@ -238,7 +238,7 @@ REQUIREMENTS:
 
 Return ONLY the formatted lyrics with meta-tags, no explanations.`
 
-    const lyrics = await callLLM(promptForLLM, 'gpt-4o')
+    const lyrics = await callLLM(promptForLLM, 'gpt-4o-mini')
     return lyrics.trim()
   }
 
@@ -576,7 +576,7 @@ REQUIREMENTS:
 Return ONLY the complete formatted lyrics with meta-tags.`
 
     try {
-      const enhanced = await callLLM(promptForLLM, 'gpt-4o')
+      const enhanced = await callLLM(promptForLLM, 'gpt-4o-mini')
       return enhanced.trim()
     } catch (error) {
       return lyrics
@@ -610,7 +610,7 @@ REQUIREMENTS:
 Return ONLY the formatted lyrics with meta-tags.`
 
     try {
-      const randomLyrics = await callLLM(promptForLLM, 'gpt-4o')
+      const randomLyrics = await callLLM(promptForLLM, 'gpt-4o-mini')
       return randomLyrics.trim()
     } catch (error) {
       return this.generateLyrics()
