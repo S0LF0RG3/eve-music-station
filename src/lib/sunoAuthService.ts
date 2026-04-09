@@ -1,0 +1,224 @@
+/**
+ * Suno Authentication Service
+ * Handles Google OAuth login and Suno.com session management
+ */
+
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
+
+// CSRF token management
+let csrfToken: string | null = null;
+
+async function getCsrfToken(forceRefresh = false): Promise<string> {
+  if (csrfToken && !forceRefresh) return csrfToken;
+  
+  try {
+    const response = await fetch(`${BACKEND_URL}/auth/csrf-token`, {
+      credentials: 'include'
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to get CSRF token');
+    }
+    
+    const data = await response.json();
+    csrfToken = data.csrfToken;
+    return csrfToken;
+  } catch (error) {
+    console.error('Failed to get CSRF token:', error);
+    throw new Error('Failed to get CSRF token');
+  }
+}
+
+// Helper to handle CSRF token errors
+async function fetchWithCsrf(url: string, options: RequestInit = {}): Promise<Response> {
+  let token = await getCsrfToken();
+  
+  const headers = {
+    ...options.headers,
+    'CSRF-Token': token
+  };
+  
+  let response = await fetch(url, {
+    ...options,
+    credentials: 'include',
+    headers
+  });
+  
+  // If we get a 403, try refreshing the token once
+  if (response.status === 403) {
+    token = await getCsrfToken(true);
+    headers['CSRF-Token'] = token;
+    
+    response = await fetch(url, {
+      ...options,
+      credentials: 'include',
+      headers
+    });
+  }
+  
+  return response;
+}
+
+export interface SunoAuthStatus {
+  authenticated: boolean;
+  user?: {
+    name: string;
+    email: string;
+  };
+}
+
+export interface SunoSessionStatus {
+  loggedIn: boolean;
+  message?: string;
+}
+
+export interface SunoPersona {
+  name: string;
+  value: string;
+}
+
+export interface CreateSongRequest {
+  lyrics?: string;
+  stylePrompt?: string;
+  genres?: string[];
+  persona?: string;
+  weirdness?: number;
+  style?: number;
+  audioQuality?: number;
+  songTitle?: string;
+}
+
+export class SunoAuthService {
+  /**
+   * Initiate Google OAuth login
+   */
+  static loginWithGoogle(): void {
+    window.location.href = `${BACKEND_URL}/auth/google`;
+  }
+
+  /**
+   * Check authentication status
+   */
+  static async getAuthStatus(): Promise<SunoAuthStatus> {
+    try {
+      const response = await fetch(`${BACKEND_URL}/auth/status`, {
+        credentials: 'include'
+      });
+      return await response.json();
+    } catch (error) {
+      console.error('Failed to get auth status:', error);
+      return { authenticated: false };
+    }
+  }
+
+  /**
+   * Logout from Google OAuth
+   */
+  static async logout(): Promise<void> {
+    try {
+      await fetchWithCsrf(`${BACKEND_URL}/auth/logout`, {
+        method: 'POST'
+      });
+      csrfToken = null; // Clear cached token
+    } catch (error) {
+      console.error('Failed to logout:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Login to Suno.com using the authenticated Google account
+   */
+  static async loginToSuno(): Promise<SunoSessionStatus> {
+    try {
+      const response = await fetchWithCsrf(`${BACKEND_URL}/api/suno/login`, {
+        method: 'POST'
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to login to Suno');
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Failed to login to Suno:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create a song on Suno.com
+   */
+  static async createSong(request: CreateSongRequest): Promise<{ success: boolean; message: string }> {
+    try {
+      const response = await fetchWithCsrf(`${BACKEND_URL}/api/suno/create-song`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(request)
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to create song on Suno');
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Failed to create song on Suno:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get available personas from Suno
+   */
+  static async getPersonas(): Promise<SunoPersona[]> {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/suno/personas`, {
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to fetch personas');
+      }
+      
+      const data = await response.json();
+      return data.personas || [];
+    } catch (error) {
+      console.error('Failed to fetch personas:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Logout from Suno.com
+   */
+  static async logoutFromSuno(): Promise<void> {
+    try {
+      await fetchWithCsrf(`${BACKEND_URL}/api/suno/logout`, {
+        method: 'POST'
+      });
+      csrfToken = null; // Clear cached token
+    } catch (error) {
+      console.error('Failed to logout from Suno:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Check if backend is available
+   */
+  static async healthCheck(): Promise<boolean> {
+    try {
+      const response = await fetch(`${BACKEND_URL}/health`);
+      return response.ok;
+    } catch (error) {
+      console.error('Backend health check failed:', error);
+      return false;
+    }
+  }
+}

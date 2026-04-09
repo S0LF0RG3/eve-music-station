@@ -19,7 +19,10 @@ import { VocalStyleSelector } from './components/VocalStyleSelector'
 import { VocalRecommendations } from './components/VocalRecommendations'
 import { MusicLibraryDisplay } from './components/MusicLibrary'
 import { SharePage } from './components/SharePage'
+import { SunoAuthPanel } from './components/SunoAuthPanel'
+import { PersonaSelector } from './components/PersonaSelector'
 import { getBestVocalStyle, shouldSuggestVocalChange } from './lib/vocalRecommendations'
+import { SunoAuthService } from './lib/sunoAuthService'
 import { toast } from 'sonner'
 import { Toaster } from './components/ui/sonner'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './components/ui/dialog'
@@ -76,6 +79,9 @@ function MainApp() {
   const [isValidatingKey, setIsValidatingKey] = useState(false)
   const [keyValidation, setKeyValidation] = useState<'valid' | 'invalid' | null>(null)
   const [libraryRefresh, setLibraryRefresh] = useState(0)
+  const [sunoAuthenticated, setSunoAuthenticated] = useState(false)
+  const [selectedPersona, setSelectedPersona] = useKV<string>('eve-music-persona', '')
+  const [createOnSuno, setCreateOnSuno] = useState(false)
 
   const config: MusicConfig = {
     mode: mode ?? 'suno',
@@ -168,6 +174,11 @@ function MainApp() {
       return
     }
 
+    if (mode === 'suno' && createOnSuno && !sunoAuthenticated) {
+      toast.error('Please authenticate with Suno first')
+      return
+    }
+
     if (!(description ?? '').trim()) {
       toast.warning('Consider adding a description for better results')
     }
@@ -188,6 +199,29 @@ function MainApp() {
         await MusicLibrary.add(config, generationResult)
         setLibraryRefresh(prev => prev + 1)
 
+        // If in Suno mode and "Create on Suno" is enabled, submit to Suno
+        if (mode === 'suno' && createOnSuno && sunoAuthenticated) {
+          try {
+            const songTitle = await generateSongTitle(generationResult)
+            
+            await SunoAuthService.createSong({
+              lyrics: generationResult.lyrics,
+              stylePrompt: generationResult.stylePrompt,
+              genres: genres ?? [],
+              persona: selectedPersona ?? undefined,
+              weirdness: weirdness ?? 50,
+              style: style ?? 50,
+              audioQuality: audio ?? 50,
+              songTitle
+            })
+            
+            toast.success('Song created on Suno.com successfully!')
+          } catch (sunoError) {
+            console.error('Suno creation error:', sunoError)
+            toast.error('Failed to create song on Suno, but export was saved to library')
+          }
+        }
+
         if (config.mode === 'elevenlabs' && generationResult.audioUrl) {
           toast.success('Music generated successfully! Saved to library.')
         } else {
@@ -201,6 +235,28 @@ function MainApp() {
       console.error(error)
     } finally {
       setIsGenerating(false)
+    }
+  }
+
+  const generateSongTitle = async (result: GenerationResult): Promise<string> => {
+    try {
+      const { callLLM } = await import('./lib/sparkUtils')
+      
+      // Use LLM to generate a creative song title based on lyrics and style
+      const prompt = `Generate a creative, catchy song title (max 60 characters) for a ${genres?.join(', ')} song with these lyrics:
+
+${result.lyrics?.substring(0, 200)}...
+
+Style: ${result.stylePrompt}
+
+Return only the song title, nothing else.`
+      
+      const title = await callLLM(prompt, 'gpt-4o-mini')
+      return title.trim().replace(/^["']|["']$/g, '') // Remove quotes if present
+    } catch (error) {
+      console.error('Failed to generate song title:', error)
+      // Fallback to simple title based on genres
+      return `${genres?.[0] || 'Music'} Creation ${Date.now().toString().slice(-6)}`
     }
   }
 
@@ -404,6 +460,47 @@ function MainApp() {
               </div>
             )}
           </Card>
+
+          {mode === 'suno' && (
+            <>
+              <SunoAuthPanel onAuthChange={setSunoAuthenticated} />
+              
+              {sunoAuthenticated && (
+                <Card className="p-6 backdrop-cosmic border-accent/20 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <MusicNotes className="h-5 w-5 text-accent" weight="fill" />
+                      <h3 className="text-sm font-medium uppercase tracking-wide">Suno Direct Creation</h3>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        id="create-on-suno"
+                        checked={createOnSuno}
+                        onCheckedChange={setCreateOnSuno}
+                      />
+                      <Label htmlFor="create-on-suno" className="text-sm cursor-pointer">
+                        Auto-create on Suno.com
+                      </Label>
+                    </div>
+                  </div>
+
+                  {createOnSuno && (
+                    <>
+                      <p className="text-xs text-muted-foreground">
+                        When enabled, songs will be automatically created on Suno.com after generation.
+                      </p>
+                      
+                      <PersonaSelector
+                        value={selectedPersona ?? ''}
+                        onChange={setSelectedPersona}
+                        disabled={!sunoAuthenticated}
+                      />
+                    </>
+                  )}
+                </Card>
+              )}
+            </>
+          )}
 
           <Card className="p-6 backdrop-cosmic border-accent/20">
             <GenreSelector
